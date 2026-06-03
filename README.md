@@ -1,6 +1,6 @@
 # Full Stack E-commerce Platform
 
-A production-ready e-commerce web application built with Next.js, React, Tailwind CSS, MongoDB, Clerk authentication, Razorpay payments, and Cloudinary media management.
+A production-ready e-commerce web application built with Next.js, React, Tailwind CSS, Neon PostgreSQL, Clerk authentication, Razorpay payments, and Cloudinary media management.
 
 ## Features
 
@@ -12,13 +12,13 @@ A production-ready e-commerce web application built with Next.js, React, Tailwin
 - Order history and receipt generation
 - Product reviews
 - AI assistant integration
-- MongoDB persistence with Mongoose models
+- Neon PostgreSQL persistence with normalized relational tables
 
 ## Tech Stack
 
 - **Frontend:** Next.js, React, Tailwind CSS
 - **Backend:** Next.js API routes, Node.js
-- **Database:** MongoDB, Mongoose
+- **Database:** Neon PostgreSQL
 - **Authentication:** Clerk
 - **Payments:** Razorpay
 - **Media:** Cloudinary
@@ -30,7 +30,7 @@ A production-ready e-commerce web application built with Next.js, React, Tailwin
 app/                 Next.js app routes and API routes
 components/          Reusable UI components
 lib/                 API, auth, database, payment, and utility helpers
-models/              Mongoose schemas
+db/                  PostgreSQL schema and migration notes
 public/              Static assets
 ```
 
@@ -40,7 +40,7 @@ public/              Static assets
 
 - Node.js 20 or newer
 - npm
-- MongoDB database
+- Neon PostgreSQL database
 - Clerk account
 - Razorpay account
 - Cloudinary account
@@ -77,7 +77,7 @@ npm start
 ## Environment Variables
 
 ```env
-MONGO_URI=
+DATABASE_URL=
 GEMINI_API_KEY=
 
 NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=

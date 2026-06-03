@@ -1,8 +1,8 @@
-import connectDB from "@/lib/db";
+import { db } from "@/lib/db";
 import { generateAssistantReply } from "@/lib/ai";
 import { presentProduct } from "@/lib/catalog";
 import { priceInPaise as productPriceInPaise } from "@/lib/format";
-import Product from "@/models/Product";
+import { productFromRow } from "@/lib/postgres";
 
 function extractBudgetInr(message) {
   const normalized = message.toLowerCase();
@@ -121,11 +121,18 @@ function fallbackReply(message, products, budgetInr) {
 export async function POST(request) {
   try {
     const { message } = await request.json();
-    await connectDB();
+    const sql = db();
 
     const budgetInr = extractBudgetInr(message || "");
     const messageTokens = tokensFor(message || "");
-    const products = await Product.find({ active: { $ne: false } }).select("-embedding").lean();
+    const rows = await sql`
+      SELECT id, title, slug, description, price_in_paise, category, image, images, stock, active, tags, created_at, updated_at
+      FROM products
+      WHERE active = true
+      ORDER BY created_at DESC
+      LIMIT 100
+    `;
+    const products = rows.map(productFromRow);
     const rankedProducts = products
       .map((product) => ({
         ...product,

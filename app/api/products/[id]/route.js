@@ -1,19 +1,24 @@
-import connectDB from "@/lib/db";
+import { db } from "@/lib/db";
 import { createEmbedding, productText } from "@/lib/ai";
 import { requireAdmin } from "@/lib/auth";
 import { presentProduct, productPayload } from "@/lib/catalog";
-import Product from "@/models/Product";
+import { productFromRow } from "@/lib/postgres";
 
 export async function GET(_request, { params }) {
-  await connectDB();
+  const sql = db();
   const { id } = await params;
-  const product = await Product.findOne({ _id: id, active: { $ne: false } }).select("-embedding").lean();
+  const [product] = await sql`
+    SELECT id, title, slug, description, price_in_paise, category, image, images, stock, active, tags, created_at, updated_at
+    FROM products
+    WHERE id = ${id} AND active = true
+    LIMIT 1
+  `;
 
   if (!product) {
     return Response.json({ message: "Product not found" }, { status: 404 });
   }
 
-  return Response.json({ product: presentProduct(product) });
+  return Response.json({ product: presentProduct(productFromRow(product)) });
 }
 
 export async function PATCH(request, { params }) {
@@ -32,9 +37,25 @@ export async function PATCH(request, { params }) {
       update.embedding = embedding;
     }
 
-    await connectDB();
-    const product = await Product.findByIdAndUpdate(id, update, { new: true }).select("-embedding");
-    return Response.json({ product: presentProduct(product) });
+    const sql = db();
+    const [product] = await sql`
+      UPDATE products
+      SET title = ${update.title},
+        slug = ${update.slug},
+        description = ${update.description},
+        price_in_paise = ${update.priceInPaise},
+        category = ${update.category},
+        image = ${update.image},
+        images = ${JSON.stringify(update.images)}::jsonb,
+        stock = ${update.stock},
+        active = ${update.active},
+        tags = ${update.tags},
+        embedding = ${JSON.stringify(update.embedding || [])}::jsonb,
+        updated_at = now()
+      WHERE id = ${id}
+      RETURNING id, title, slug, description, price_in_paise, category, image, images, stock, active, tags, embedding, created_at, updated_at
+    `;
+    return Response.json({ product: presentProduct(productFromRow(product)) });
   } catch (error) {
     return Response.json({ message: "Unable to update product", error: error.message }, { status: 500 });
   }
@@ -46,8 +67,8 @@ export async function DELETE(_request, { params }) {
     return response;
   }
 
-  await connectDB();
+  const sql = db();
   const { id } = await params;
-  await Product.findByIdAndUpdate(id, { active: false });
+  await sql`UPDATE products SET active = false, updated_at = now() WHERE id = ${id}`;
   return Response.json({ message: "Product archived" });
 }

@@ -1,8 +1,7 @@
-import connectDB from "@/lib/db";
+import { db } from "@/lib/db";
 import { createEmbedding, productText } from "@/lib/ai";
 import { requireAdmin } from "@/lib/auth";
 import { productPayload } from "@/lib/catalog";
-import Product from "@/models/Product";
 
 const products = [
   {
@@ -194,9 +193,8 @@ export async function GET() {
       return response;
     }
 
-    await connectDB();
-
-    await Product.deleteMany({});
+    const sql = db();
+    await sql`TRUNCATE products RESTART IDENTITY CASCADE`;
 
     const seededProducts = await Promise.all(
       products.map(async (product) => {
@@ -208,7 +206,24 @@ export async function GET() {
       }),
     );
 
-    await Product.insertMany(seededProducts);
+    for (const product of seededProducts) {
+      await sql`
+        INSERT INTO products (title, slug, description, price_in_paise, category, image, images, stock, active, tags, embedding)
+        VALUES (
+          ${product.title},
+          ${product.slug},
+          ${product.description},
+          ${product.priceInPaise},
+          ${product.category},
+          ${product.image},
+          ${JSON.stringify(product.images)}::jsonb,
+          ${product.stock},
+          ${product.active},
+          ${product.tags},
+          ${JSON.stringify(product.embedding)}::jsonb
+        )
+      `;
+    }
 
     return Response.json({
       message: "Database seeded successfully",

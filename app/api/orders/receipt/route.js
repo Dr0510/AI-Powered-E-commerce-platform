@@ -1,7 +1,6 @@
-import connectDB from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { generateReceiptHTML } from "@/lib/pdf-receipt";
-import Order from "@/models/Order";
+import { getOrderById } from "@/lib/postgres";
 
 export async function GET(request) {
   try {
@@ -18,8 +17,7 @@ export async function GET(request) {
       return Response.json({ message: "orderId is required" }, { status: 400 });
     }
 
-    await connectDB();
-    const order = await Order.findOne({ _id: orderId, user: user._id }).lean();
+    const order = await getOrderById(orderId, user._id);
 
     if (!order) {
       return Response.json({ message: "Order not found" }, { status: 404 });

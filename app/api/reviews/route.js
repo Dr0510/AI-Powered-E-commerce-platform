@@ -1,6 +1,6 @@
-import connectDB from "@/lib/db";
+import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import Review from "@/models/Review";
+import { reviewFromRow } from "@/lib/postgres";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -10,9 +10,14 @@ export async function GET(request) {
     return Response.json({ message: "productId is required" }, { status: 400 });
   }
 
-  await connectDB();
-  const reviews = await Review.find({ product: productId }).sort({ createdAt: -1 }).lean();
-  return Response.json({ reviews });
+  const sql = db();
+  const reviews = await sql`
+    SELECT id, product_id, user_id, user_name, rating, comment, created_at, updated_at
+    FROM reviews
+    WHERE product_id = ${productId}
+    ORDER BY created_at DESC
+  `;
+  return Response.json({ reviews: reviews.map(reviewFromRow) });
 }
 
 export async function POST(request) {
@@ -23,17 +28,15 @@ export async function POST(request) {
     }
 
     const { productId, rating, comment } = await request.json();
-    await connectDB();
+    const sql = db();
 
-    const review = await Review.create({
-      product: productId,
-      user: user._id,
-      userName: user.name,
-      rating: Number(rating),
-      comment,
-    });
+    const [review] = await sql`
+      INSERT INTO reviews (product_id, user_id, user_name, rating, comment)
+      VALUES (${productId}, ${user._id}, ${user.name}, ${Number(rating)}, ${comment || ""})
+      RETURNING id, product_id, user_id, user_name, rating, comment, created_at, updated_at
+    `;
 
-    return Response.json({ review }, { status: 201 });
+    return Response.json({ review: reviewFromRow(review) }, { status: 201 });
   } catch (error) {
     return Response.json({ message: "Unable to save review", error: error.message }, { status: 500 });
   }

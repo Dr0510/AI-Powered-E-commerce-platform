@@ -1,9 +1,9 @@
-import connectDB from "@/lib/db";
+import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { normalizePaise } from "@/lib/format";
 import { markOrderPaid, presentOrder } from "@/lib/orders";
 import { razorpayClient, razorpayCredentials, verifyPaymentSignature } from "@/lib/razorpay";
-import Order from "@/models/Order";
+import { getOrderById } from "@/lib/postgres";
 
 export async function POST(request) {
   try {
@@ -15,8 +15,8 @@ export async function POST(request) {
     const { orderId } = await request.json();
     const { keyId } = razorpayCredentials();
 
-    await connectDB();
-    const order = await Order.findOne({ _id: orderId, user: user._id });
+    const sql = db();
+    const order = await getOrderById(orderId, user._id);
     if (!order) {
       return Response.json({ message: "Order not found" }, { status: 404 });
     }
@@ -35,15 +35,17 @@ export async function POST(request) {
       },
     });
 
-    order.status = "payment_pending";
-    order.payment = {
-      provider: "razorpay",
-      razorpayOrderId: razorpayOrder.id,
-      currency: "INR",
-      amountInPaise,
-      status: "created",
-    };
-    await order.save();
+    await sql`UPDATE orders SET status = 'payment_pending', updated_at = now() WHERE id = ${order._id}`;
+    await sql`
+      INSERT INTO payments (order_id, provider, razorpay_order_id, currency, amount_in_paise, status)
+      VALUES (${order._id}, 'razorpay', ${razorpayOrder.id}, 'INR', ${amountInPaise}, 'created')
+      ON CONFLICT (order_id)
+      DO UPDATE SET
+        razorpay_order_id = EXCLUDED.razorpay_order_id,
+        amount_in_paise = EXCLUDED.amount_in_paise,
+        status = 'created',
+        updated_at = now()
+    `;
 
     return Response.json({
       keyId,
@@ -77,8 +79,7 @@ export async function PUT(request) {
       return Response.json({ message: "Invalid Razorpay signature" }, { status: 400 });
     }
 
-    await connectDB();
-    const order = await Order.findOne({ _id: localOrderId, user: user._id });
+    const order = await getOrderById(localOrderId, user._id);
     if (!order) {
       return Response.json({ message: "Order not found" }, { status: 404 });
     }

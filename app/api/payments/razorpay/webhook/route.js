@@ -1,8 +1,7 @@
-import connectDB from "@/lib/db";
+import { db } from "@/lib/db";
 import { markOrderPaid, presentOrder } from "@/lib/orders";
 import { verifyWebhookSignature } from "@/lib/razorpay";
-import Order from "@/models/Order";
-import WebhookEvent from "@/models/WebhookEvent";
+import { getOrderById, getOrderByRazorpayOrderId } from "@/lib/postgres";
 
 export async function POST(request) {
   const body = await request.text();
@@ -17,18 +16,17 @@ export async function POST(request) {
       return Response.json({ message: "Missing Razorpay event id" }, { status: 400 });
     }
 
-    await connectDB();
-    const existing = await WebhookEvent.findOne({ eventId });
+    const sql = db();
+    const [existing] = await sql`SELECT id FROM webhook_events WHERE event_id = ${eventId} LIMIT 1`;
     if (existing) {
       return Response.json({ message: "Duplicate webhook ignored" });
     }
 
     const payload = JSON.parse(body);
-    await WebhookEvent.create({
-      eventId,
-      event: payload.event,
-      processedAt: new Date(),
-    });
+    await sql`
+      INSERT INTO webhook_events (event_id, event, processed_at)
+      VALUES (${eventId}, ${payload.event}, now())
+    `;
 
     const payment = payload.payload?.payment?.entity;
     if (!payment || !["payment.captured", "payment.authorized"].includes(payload.event)) {
@@ -36,10 +34,9 @@ export async function POST(request) {
     }
 
     const localOrderId = payment.notes?.localOrderId;
-    const query = localOrderId
-      ? { _id: localOrderId }
-      : { "payment.razorpayOrderId": payment.order_id };
-    const order = await Order.findOne(query);
+    const order = localOrderId
+      ? await getOrderById(localOrderId)
+      : await getOrderByRazorpayOrderId(payment.order_id);
     if (!order) {
       return Response.json({ message: "Order not found for webhook" }, { status: 202 });
     }
