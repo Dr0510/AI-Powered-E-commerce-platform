@@ -1,36 +1,104 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Full Stack E-commerce Platform
+
+A production-ready e-commerce web application built with Next.js, React, Tailwind CSS, MongoDB, Clerk authentication, Razorpay payments, and Cloudinary media management.
+
+## Features
+
+- Product catalog with product detail pages
+- Shopping cart and wishlist flows
+- User authentication with Clerk
+- Admin product and order management
+- Razorpay checkout and webhook handling
+- Order history and receipt generation
+- Product reviews
+- AI assistant integration
+- MongoDB persistence with Mongoose models
+
+## Tech Stack
+
+- **Frontend:** Next.js, React, Tailwind CSS
+- **Backend:** Next.js API routes, Node.js
+- **Database:** MongoDB, Mongoose
+- **Authentication:** Clerk
+- **Payments:** Razorpay
+- **Media:** Cloudinary
+- **Email:** Resend
+
+## Project Structure
+
+```text
+app/                 Next.js app routes and API routes
+components/          Reusable UI components
+lib/                 API, auth, database, payment, and utility helpers
+models/              Mongoose schemas
+public/              Static assets
+```
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 20 or newer
+- npm
+- MongoDB database
+- Clerk account
+- Razorpay account
+- Cloudinary account
+
+### Installation
+
+```bash
+npm install
+```
+
+Create a local environment file:
+
+```bash
+cp .env.example .env
+```
+
+Update `.env` with your local credentials.
+
+### Development
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open `http://localhost:3000` in your browser.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+### Production Build
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm start
+```
 
-## Learn More
+## Environment Variables
 
-To learn more about Next.js, take a look at the following resources:
+```env
+MONGO_URI=
+GEMINI_API_KEY=
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY=
+CLERK_SECRET_KEY=
+ADMIN_EMAILS=
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+NEXT_PUBLIC_CLOUDINARY_CLOUD_NAME=
+CLOUDINARY_API_KEY=
+CLOUDINARY_API_SECRET=
 
-## Deploy on Vercel
+RAZORPAY_KEY_ID=
+RAZORPAY_KEY_SECRET=
+RAZORPAY_WEBHOOK_SECRET=
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## GitHub Setup
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This repository should include source code, configuration, public assets, package manifests, and `.env.example`.
+
+Do not commit real environment files, build output, dependency folders, logs, or private certificates.
+
+## License
+
+Add your preferred license before publishing the project for public reuse.

@@ -1,0 +1,9 @@
+<svg width="220" height="72" viewBox="0 0 220 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="220" height="72" rx="12" fill="#0F172A"/>
+  <rect x="12" y="12" width="48" height="48" rx="10" fill="#2874F0"/>
+  <path d="M24 48V24h11.2c7.5 0 12.8 4.9 12.8 12s-5.3 12-12.8 12H24Zm8-6.8h3c3.1 0 5-2 5-5.2s-1.9-5.2-5-5.2h-3v10.4Z" fill="white"/>
+  <path d="M70 23h22.5c10.1 0 17.1 6.4 17.1 16.1S102.6 55 92.5 55H70V23Zm10.1 8.3v15.4h11.7c4.8 0 7.7-3.1 7.7-7.6s-2.9-7.8-7.7-7.8H80.1Z" fill="white"/>
+  <path d="M117.8 55V23h24.4c7 0 11.8 4.4 11.8 10.8 0 4.3-2.2 7.6-5.9 9.3l7.5 11.9h-11.4l-6.3-10.4h-10V55h-10.1Zm10.1-18.3h12.7c2 0 3.3-1.2 3.3-3s-1.3-3-3.3-3h-12.7v6Z" fill="white"/>
+  <path d="M164 31.4c0-5 4.1-9.1 9.1-9.1h28.5v8.3h-27.2c-1.8 0-3.2 1.4-3.2 3.1v10.6c0 1.7 1.4 3.1 3.2 3.1h17.4v-4.6h-13.6v-7.3H202V55h-28.9c-5 0-9.1-4.1-9.1-9.1V31.4Z" fill="#FFB703"/>
+  <text x="70" y="67" fill="#CBD5E1" font-family="Arial, Helvetica, sans-serif" font-size="9" font-weight="700">DR MART • A DR GROUP COMPANY</text>
+</svg>
