@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import AuthControls from "@/components/AuthControls";
 import { api } from "@/lib/api";
-import { discountFor, money, ratingFor } from "@/lib/format";
+import { discountFor, money, moneyFromPaise, priceInPaise, ratingFor } from "@/lib/format";
 
 const shippingDefaults = {
   name: "",
@@ -67,7 +67,7 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
 
   const cartTotal = useMemo(
-    () => cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    () => cart.reduce((sum, item) => sum + priceInPaise(item) * item.quantity, 0),
     [cart],
   );
 
@@ -130,11 +130,15 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    const saved = localStorage.getItem("commerce_cart");
-    if (saved) {
-      setCart(JSON.parse(saved));
-    }
-    setMounted(true);
+    const timer = window.setTimeout(() => {
+      const saved = localStorage.getItem("commerce_cart");
+      if (saved) {
+        setCart(JSON.parse(saved));
+      }
+      setMounted(true);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -175,6 +179,7 @@ export default function Home() {
           productId: product._id,
           title: product.title,
           price: product.price,
+          priceInPaise: priceInPaise(product),
           image: product.image,
           quantity: 1,
         },
@@ -620,7 +625,7 @@ export default function Home() {
                       <img alt="" className="h-16 w-16 rounded object-contain" src={item.image} />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-bold">{item.title}</p>
-                        <p className="text-sm font-black">{money(item.price)}</p>
+                        <p className="text-sm font-black">{moneyFromPaise(priceInPaise(item))}</p>
                         <div className="mt-2 flex items-center gap-2">
                           <button
                             className="h-7 w-7 rounded border border-slate-300"
@@ -647,7 +652,7 @@ export default function Home() {
               </div>
               <div className="mt-4 flex items-center justify-between border-t border-slate-200 pt-4">
                 <span className="font-bold">Subtotal</span>
-                <span className="text-xl font-black">{money(cartTotal)}</span>
+                <span className="text-xl font-black">{moneyFromPaise(cartTotal)}</span>
               </div>
             </section>
 

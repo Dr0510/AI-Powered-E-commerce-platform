@@ -1,5 +1,6 @@
 import connectDB from "@/lib/db";
 import { requireAdmin, requireUser } from "@/lib/auth";
+import { normalizePaise, paiseToRupees, priceInPaise } from "@/lib/format";
 import { presentOrder } from "@/lib/orders";
 import Order from "@/models/Order";
 import Product from "@/models/Product";
@@ -50,19 +51,15 @@ export async function POST(request) {
           return null;
         }
 
-        const quantity = Math.max(1, Number(item.quantity || 1));
-        
-        // Get price from frontend cart (already correct)
-        const price = Number(item.price || 0);
-        // Convert to paise: if price is 75, make it 7500
-        const priceInPaise = Math.round(price * 100);
+        const quantity = Math.max(1, Math.floor(Number(item.quantity || 1)));
+        const productPriceInPaise = priceInPaise(product);
 
         return {
           product: product._id,
           title: product.title,
           image: product.images?.[0]?.url || product.image,
-          price,
-          priceInPaise,
+          price: paiseToRupees(productPriceInPaise),
+          priceInPaise: productPriceInPaise,
           quantity,
         };
       })
@@ -79,7 +76,7 @@ export async function POST(request) {
       }
     }
 
-    const totalInPaise = orderItems.reduce((sum, item) => sum + item.priceInPaise * item.quantity, 0);
+    const totalInPaise = normalizePaise(orderItems.reduce((sum, item) => sum + item.priceInPaise * item.quantity, 0));
     const order = await Order.create({
       user: user._id,
       clerkId: user.clerkId,

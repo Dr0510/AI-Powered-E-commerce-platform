@@ -1,6 +1,7 @@
 import connectDB from "@/lib/db";
 import { generateAssistantReply } from "@/lib/ai";
 import { presentProduct } from "@/lib/catalog";
+import { priceInPaise as productPriceInPaise } from "@/lib/format";
 import Product from "@/models/Product";
 
 function extractBudgetInr(message) {
@@ -50,11 +51,7 @@ function intentFor(message) {
 }
 
 function priceInInr(product) {
-  const priceInPaise =
-    product.priceInPaise !== undefined && product.priceInPaise !== null
-      ? product.priceInPaise
-      : Math.round(Number(product.price || 0) * 100);
-  return Math.round(priceInPaise / 100);
+  return Math.round(productPriceInPaise(product) / 100);
 }
 
 function scoreProduct(product, messageTokens, rawMessage, budgetInr) {

@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { money } from "@/lib/format";
+import { moneyFromPaise, priceInPaise } from "@/lib/format";
 
 export default function CartPage() {
   const [cart, setCart] = useState(() => {
@@ -18,7 +18,7 @@ export default function CartPage() {
     localStorage.setItem("commerce_cart", JSON.stringify(cart));
   }, [cart]);
 
-  const total = useMemo(() => cart.reduce((sum, item) => sum + item.price * item.quantity, 0), [cart]);
+  const totalInPaise = useMemo(() => cart.reduce((sum, item) => sum + priceInPaise(item) * item.quantity, 0), [cart]);
 
   function update(productId, quantity) {
     setCart((current) =>
@@ -47,14 +47,14 @@ export default function CartPage() {
                     <button className="h-8 w-8 rounded border" onClick={() => update(item.productId, item.quantity + 1)} type="button">+</button>
                   </div>
                 </div>
-                <p className="text-xl font-black">{money(item.price * item.quantity)}</p>
+                <p className="text-xl font-black">{moneyFromPaise(priceInPaise(item) * item.quantity)}</p>
               </div>
             )) : <p className="rounded bg-slate-50 p-5">Your cart is empty.</p>}
           </div>
         </div>
         <aside className="rounded bg-white p-5 shadow-sm">
           <h2 className="text-xl font-black">Subtotal</h2>
-          <p className="mt-2 text-3xl font-black">{money(total)}</p>
+          <p className="mt-2 text-3xl font-black">{moneyFromPaise(totalInPaise)}</p>
           <Link className="mt-5 block rounded bg-[#ffd814] px-4 py-3 text-center font-black" href="/">
             Continue Shopping
           </Link>

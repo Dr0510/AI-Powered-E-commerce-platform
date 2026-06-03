@@ -1,5 +1,6 @@
 import connectDB from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { normalizePaise } from "@/lib/format";
 import { markOrderPaid, presentOrder } from "@/lib/orders";
 import { razorpayClient, razorpayCredentials, verifyPaymentSignature } from "@/lib/razorpay";
 import Order from "@/models/Order";
@@ -23,7 +24,7 @@ export async function POST(request) {
       return Response.json({ message: "Order is already paid" }, { status: 409 });
     }
 
-    const amountInPaise = Math.max(100, Math.round(order.totalInPaise));
+    const amountInPaise = Math.max(100, normalizePaise(order.totalInPaise));
     const razorpayOrder = await razorpayClient().orders.create({
       amount: amountInPaise,
       currency: "INR",

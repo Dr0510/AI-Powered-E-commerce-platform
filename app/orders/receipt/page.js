@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
+import { moneyFromPaise, priceInPaise } from '@/lib/format';
 
 export default function ReceiptPage() {
   return (
@@ -30,8 +31,6 @@ function ReceiptContent() {
 
   useEffect(() => {
     if (!orderId) {
-      setError('Order ID not provided');
-      setLoading(false);
       return;
     }
 
@@ -80,19 +79,19 @@ function ReceiptContent() {
     }
   };
 
-  if (loading) {
-    return <ReceiptLoading />;
-  }
-
-  if (error) {
+  if (!orderId || error) {
     return (
       <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
         <div style={{ textAlign: 'center', color: '#d32f2f' }}>
           <h2>Error</h2>
-          <p>{error}</p>
+          <p>{error || 'Order ID not provided'}</p>
         </div>
       </div>
     );
+  }
+
+  if (loading) {
+    return <ReceiptLoading />;
   }
 
   if (!order) {
@@ -206,8 +205,8 @@ function ReceiptContent() {
                   <tr key={idx} style={{ borderBottom: '1px solid #e0e0e0' }}>
                     <td style={{ padding: '10px', textAlign: 'left' }}>{item.title}</td>
                     <td style={{ padding: '10px', textAlign: 'center' }}>{item.quantity}</td>
-                    <td style={{ padding: '10px', textAlign: 'right' }}>₹{item.price.toFixed(2)}</td>
-                    <td style={{ padding: '10px', textAlign: 'right' }}>₹{(item.price * item.quantity).toFixed(2)}</td>
+                    <td style={{ padding: '10px', textAlign: 'right' }}>{moneyFromPaise(priceInPaise(item))}</td>
+                    <td style={{ padding: '10px', textAlign: 'right' }}>{moneyFromPaise(priceInPaise(item) * item.quantity)}</td>
                   </tr>
                 ))}
               </tbody>

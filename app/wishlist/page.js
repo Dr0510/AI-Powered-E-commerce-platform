@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { money } from "@/lib/format";
+import { moneyFromPaise, priceInPaise } from "@/lib/format";
 
 export default function WishlistPage() {
   const [items] = useState(() => {
@@ -17,7 +17,14 @@ export default function WishlistPage() {
   function addToCart(item) {
     const cart = JSON.parse(localStorage.getItem("commerce_cart") || "[]");
     localStorage.setItem("commerce_cart", JSON.stringify([
-      { productId: item.productId, title: item.title, price: item.price, image: item.image, quantity: 1 },
+      {
+        productId: item.productId,
+        title: item.title,
+        price: item.price,
+        priceInPaise: priceInPaise(item),
+        image: item.image,
+        quantity: 1,
+      },
       ...cart.filter((entry) => entry.productId !== item.productId),
     ]));
   }
@@ -35,7 +42,7 @@ export default function WishlistPage() {
                   <img alt={item.title} className="h-44 w-full object-contain" src={item.image} />
                   <h2 className="mt-3 line-clamp-2 font-bold">{item.title}</h2>
                 </Link>
-                <p className="mt-2 text-xl font-black">{money(item.price)}</p>
+                <p className="mt-2 text-xl font-black">{moneyFromPaise(priceInPaise(item))}</p>
                 <button className="mt-3 w-full rounded bg-[#ffd814] py-2 font-black" onClick={() => addToCart(item)} type="button">
                   Move to Cart
                 </button>

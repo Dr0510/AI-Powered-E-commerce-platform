@@ -3,7 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 import { use, useEffect, useState } from "react";
-import { discountFor, money, ratingFor } from "@/lib/format";
+import { discountFor, money, moneyFromPaise, priceInPaise, ratingFor } from "@/lib/format";
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
@@ -41,6 +41,7 @@ export default function ProductPage({ params }) {
         productId: productData.product._id,
         title: productData.product.title,
         price: productData.product.price,
+        priceInPaise: priceInPaise(productData.product),
         image: productData.product.image,
       });
 
@@ -60,6 +61,7 @@ export default function ProductPage({ params }) {
       productId: product._id,
       title: product.title,
       price: product.price,
+      priceInPaise: priceInPaise(product),
       image: product.image,
       quantity: 1,
     });
@@ -71,6 +73,7 @@ export default function ProductPage({ params }) {
       productId: product._id,
       title: product.title,
       price: product.price,
+      priceInPaise: priceInPaise(product),
       image: product.image,
       category: product.category,
     });
@@ -157,7 +160,7 @@ export default function ProductPage({ params }) {
               <Link className="rounded border border-slate-200 p-3" href={`/product/${item._id}`} key={item._id}>
                 <img alt={item.title} className="h-28 w-full object-contain" src={item.image} />
                 <p className="mt-2 line-clamp-2 text-sm font-bold">{item.title}</p>
-                <p className="text-sm font-black">{money(item.price)}</p>
+                <p className="text-sm font-black">{moneyFromPaise(priceInPaise(item))}</p>
               </Link>
             ))}
           </div>
