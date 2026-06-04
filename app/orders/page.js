@@ -4,25 +4,74 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { money } from "@/lib/format";
 
-async function api(path) {
-  const response = await fetch(path);
+const payableStatuses = new Set(["pending", "payment_pending", "payment_failed"]);
+
+async function api(path, options = {}) {
+  const response = await fetch(path, {
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {}),
+    },
+  });
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || "Request failed");
   return data;
+}
+
+function loadRazorpayCheckout() {
+  return new Promise((resolve, reject) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = "https://checkout.razorpay.com/v1/checkout.js";
+    script.onload = () => resolve(true);
+    script.onerror = () => reject(new Error("Unable to load Razorpay Checkout"));
+    document.body.appendChild(script);
+  });
+}
+
+async function fetchOrders() {
+  const data = await api("/api/orders");
+  return data.orders;
 }
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
   const [status, setStatus] = useState("Loading orders...");
   const [downloading, setDownloading] = useState(null);
+  const [paying, setPaying] = useState(null);
+
+  async function loadOrders() {
+    const nextOrders = await fetchOrders();
+    setOrders(nextOrders);
+    setStatus(nextOrders.length ? "Track every DR Mart order here." : "No orders yet.");
+  }
 
   useEffect(() => {
-    api("/api/orders")
-      .then((data) => {
-        setOrders(data.orders);
-        setStatus(data.orders.length ? "Track every DR Mart order here." : "No orders yet.");
+    let active = true;
+
+    fetchOrders()
+      .then((nextOrders) => {
+        if (!active) {
+          return;
+        }
+
+        setOrders(nextOrders);
+        setStatus(nextOrders.length ? "Track every DR Mart order here." : "No orders yet.");
       })
-      .catch((error) => setStatus(error.message));
+      .catch((error) => {
+        if (active) {
+          setStatus(error.message);
+        }
+      });
+
+    return () => {
+      active = false;
+    };
   }, []);
 
   const handleDownloadPDF = async (orderId, e) => {
@@ -65,6 +114,71 @@ export default function OrdersPage() {
     window.open(`/api/orders/receipt?orderId=${orderId}&format=view`, "_blank");
   };
 
+  const handleRepayment = async (order) => {
+    setPaying(order._id);
+    setStatus(`Opening payment for order #${order._id.slice(-8)}...`);
+
+    try {
+      const payment = await api("/api/payments/razorpay", {
+        method: "POST",
+        body: JSON.stringify({ orderId: order._id }),
+      });
+
+      await loadRazorpayCheckout();
+
+      const success = await new Promise((resolve, reject) => {
+        const checkout = new window.Razorpay({
+          key: payment.keyId,
+          amount: payment.amountInPaise,
+          currency: payment.currency,
+          name: "DR Mart",
+          description: `Order #${payment.localOrderId.slice(-6)}`,
+          order_id: payment.razorpayOrderId,
+          prefill: {
+            name: payment.name,
+            email: payment.email,
+          },
+          notes: {
+            localOrderId: payment.localOrderId,
+          },
+          theme: {
+            color: "#2874f0",
+          },
+          handler: async (response) => {
+            try {
+              await api("/api/payments/razorpay", {
+                method: "PUT",
+                body: JSON.stringify({
+                  localOrderId: payment.localOrderId,
+                  ...response,
+                }),
+              });
+              resolve(true);
+            } catch (error) {
+              reject(error);
+            }
+          },
+          modal: {
+            ondismiss: () => resolve(false),
+          },
+        });
+
+        checkout.open();
+      });
+
+      await loadOrders();
+      setStatus(
+        success
+          ? `Payment complete for order #${order._id.slice(-8)}.`
+          : `Order #${order._id.slice(-8)} is still waiting for payment.`,
+      );
+    } catch (error) {
+      setStatus(error.message);
+    } finally {
+      setPaying(null);
+    }
+  };
+
   return (
     <main className="min-h-screen bg-slate-100 text-slate-950">
       <Header />
@@ -89,6 +203,25 @@ export default function OrdersPage() {
                     </div>
                   ))}
                 </div>
+
+                {payableStatuses.has(order.status) && (
+                  <div className="mt-4 rounded border border-amber-200 bg-amber-50 p-3">
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <p className="text-sm font-black text-amber-900">Payment pending</p>
+                        <p className="text-sm text-amber-800">Complete payment to confirm this order.</p>
+                      </div>
+                      <button
+                        onClick={() => handleRepayment(order)}
+                        disabled={paying === order._id}
+                        className="rounded bg-[#ffd814] px-4 py-2 text-sm font-black text-slate-950 transition hover:bg-[#e8c200] disabled:cursor-not-allowed disabled:opacity-50"
+                        type="button"
+                      >
+                        {paying === order._id ? "Opening payment..." : "Pay Now"}
+                      </button>
+                    </div>
+                  </div>
+                )}
 
                 {/* Receipt & PDF Actions for Paid Orders */}
                 {(order.status === "paid" || order.status === "packed" || order.status === "shipped" || order.status === "delivered") && (
