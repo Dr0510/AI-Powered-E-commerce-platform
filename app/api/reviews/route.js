@@ -1,6 +1,7 @@
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { reviewFromRow } from "@/lib/postgres";
+import { withRateLimit } from "@/lib/rateLimit";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -20,7 +21,7 @@ export async function GET(request) {
   return Response.json({ reviews: reviews.map(reviewFromRow) });
 }
 
-export async function POST(request) {
+async function postHandler(request) {
   try {
     const { user, response } = await requireUser();
     if (response) {
@@ -41,3 +42,5 @@ export async function POST(request) {
     return Response.json({ message: "Unable to save review", error: error.message }, { status: 500 });
   }
 }
+
+export const POST = withRateLimit(postHandler, { limit: 30, windowMs: 60 * 1000 });

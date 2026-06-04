@@ -4,8 +4,9 @@ import { normalizePaise } from "@/lib/format";
 import { markOrderPaid, presentOrder } from "@/lib/orders";
 import { razorpayClient, razorpayCredentials, verifyPaymentSignature } from "@/lib/razorpay";
 import { getOrderById } from "@/lib/postgres";
+import { withRateLimit } from "@/lib/rateLimit";
 
-export async function POST(request) {
+async function postHandler(request) {
   try {
     const { user, response } = await requireUser();
     if (response) {
@@ -61,7 +62,7 @@ export async function POST(request) {
   }
 }
 
-export async function PUT(request) {
+async function putHandler(request) {
   try {
     const { user, response } = await requireUser();
     if (response) {
@@ -91,3 +92,6 @@ export async function PUT(request) {
     return Response.json({ message: error.message }, { status: 500 });
   }
 }
+
+export const POST = withRateLimit(postHandler, { limit: 50, windowMs: 60 * 1000 });
+export const PUT = withRateLimit(putHandler, { limit: 50, windowMs: 60 * 1000 });

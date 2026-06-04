@@ -3,6 +3,7 @@ import { requireAdmin, requireUser } from "@/lib/auth";
 import { normalizePaise, paiseToRupees, priceInPaise } from "@/lib/format";
 import { presentOrder } from "@/lib/orders";
 import { getOrderById, listOrders } from "@/lib/postgres";
+import { withRateLimit } from "@/lib/rateLimit";
 
 export async function GET(request) {
   const { user, response } = await requireUser();
@@ -24,7 +25,7 @@ export async function GET(request) {
   return Response.json({ orders: orders.map(presentOrder) });
 }
 
-export async function POST(request) {
+async function postHandler(request) {
   try {
     const { user, response } = await requireUser();
     if (response) {
@@ -116,6 +117,8 @@ export async function POST(request) {
     return Response.json({ message: "Unable to create order", error: error.message }, { status: 500 });
   }
 }
+
+export const POST = withRateLimit(postHandler);
 
 export async function PATCH(request) {
   try {
