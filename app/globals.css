@@ -1539,3 +1539,270 @@ textarea:focus-visible {
   background: var(--brand-green-bright);
   transform: translateY(-1px);
 }
+
+/* ═══════════════════════════════════════════
+   DARK MODE OVERRIDES FOR HARDCODED COLORS
+   ═══════════════════════════════════════════ */
+[data-theme="dark"] main.luxury-shell {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .glass-panel {
+  background: var(--card-bg);
+  border-color: var(--border-primary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] button.btn-category,
+[data-theme="dark"] select,
+[data-theme="dark"] input {
+  background-color: var(--input-bg);
+  border-color: var(--input-border);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] button.btn-category {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] button.btn-category:hover {
+  background-color: var(--tab-hover-bg);
+}
+
+[data-theme="dark"] button.btn-category.active {
+  background-color: var(--brand-green);
+  color: #fff;
+}
+
+[data-theme="dark"] .glass-panel p,
+[data-theme="dark"] .glass-panel h2 {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .brand-gradient {
+  background: var(--hero-gradient);
+}
+
+[data-theme="dark"] article {
+  background-color: var(--card-bg);
+  border-color: var(--border-primary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] a {
+  color: var(--text-accent);
+}
+
+[data-theme="dark"] a:visited {
+  color: var(--text-accent);
+}
+
+[data-theme="dark"] p, 
+[data-theme="dark"] span,
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3,
+[data-theme="dark"] h4,
+[data-theme="dark"] h5,
+[data-theme="dark"] h6 {
+  color: var(--text-primary);
+}
+
+/* Skeleton loaders in dark mode */
+[data-theme="dark"] .skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--skeleton-base) 0%,
+    var(--skeleton-shine) 50%,
+    var(--skeleton-base) 100%
+  );
+  background-size: 200% 100%;
+  animation: loading 2s infinite;
+}
+
+/* Button styling in dark mode */
+[data-theme="dark"] .btn-primary {
+  background: var(--brand-green);
+  color: #fff;
+}
+
+[data-theme="dark"] .btn-primary:hover {
+  background: var(--brand-green-bright);
+}
+
+[data-theme="dark"] .btn-gold {
+  background: var(--brand-gold);
+  color: #123f3a;
+}
+
+[data-theme="dark"] .btn-gold:hover {
+  background: var(--brand-gold);
+  opacity: 0.9;
+}
+
+[data-theme="dark"] .btn-ghost {
+  background: var(--surface-secondary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .btn-ghost:hover {
+  background: var(--surface-elevated);
+}
+
+[data-theme="dark"] input::placeholder,
+[data-theme="dark"] select::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+[data-theme="dark"] .empty-state {
+  background: var(--surface-secondary);
+  border: 1px solid var(--border-primary);
+  color: var(--text-primary);
+}
+
+/* ═══════════════════════════════════════════
+   MICRO-ANIMATIONS & POLISH
+   ═══════════════════════════════════════════ */
+
+/* Smooth transitions on all interactive elements */
+button, a, input, select, textarea {
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
+}
+
+/* Button press animation */
+button:active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+/* Link hover effect */
+a:not([class]):hover {
+  opacity: 0.8;
+}
+
+/* Smooth page transitions */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+main {
+  animation: fadeInUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Staggered list animations */
+article, .skeleton-card, .empty-state {
+  animation: fadeInUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+article:nth-child(1) { animation-delay: 0ms; }
+article:nth-child(2) { animation-delay: 50ms; }
+article:nth-child(3) { animation-delay: 100ms; }
+article:nth-child(4) { animation-delay: 150ms; }
+article:nth-child(5) { animation-delay: 200ms; }
+article:nth-child(n+6) { animation-delay: 250ms; }
+
+/* Hover lift effect for cards */
+article:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] article:hover {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.4);
+}
+
+/* Image zoom on hover */
+img {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+img:hover {
+  transform: scale(1.02);
+}
+
+/* Smooth color transitions for all text elements */
+h1, h2, h3, h4, h5, h6, p, span {
+  transition: color 0.2s ease;
+}
+
+/* ═══════════════════════════════════════════
+   ACCESSIBILITY ENHANCEMENTS
+   ═══════════════════════════════════════════ */
+
+/* Improve form input focus states */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid var(--brand-green);
+  outline-offset: 2px;
+}
+
+/* Better contrast for buttons */
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Ensure text is legible in all states */
+[data-theme="dark"] h1,
+[data-theme="dark"] h2,
+[data-theme="dark"] h3 {
+  font-weight: 900; /* Heavier weight in dark mode for contrast */
+}
+
+/* High contrast badges and pills */
+.status-pill, [class*="badge"] {
+  font-weight: 900;
+}
+
+/* Keyboard navigation visibility */
+.skip-nav:focus {
+  top: 16px;
+}
+
+/* Error states with high contrast */
+input:invalid {
+  border-color: #dc2626;
+  background-color: rgba(220, 38, 38, 0.05);
+}
+
+/* Success states */
+button.success,
+button[aria-pressed="true"] {
+  background-color: var(--badge-green-bg);
+  color: var(--badge-green-text);
+}
+
+/* Ensure text meets WCAG AA contrast */
+[data-theme="dark"] .text-muted {
+  color: var(--text-secondary);
+}
+
+/* Loading indicator accessibility */
+.skeleton {
+  aria-busy: true;
+}
+
+/* Ensure links have sufficient padding for touch targets (min 44x44px) */
+a, button {
+  min-width: 44px;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+a[class*="nav"], a[class*="link"] {
+  padding: 8px 12px;
+}
