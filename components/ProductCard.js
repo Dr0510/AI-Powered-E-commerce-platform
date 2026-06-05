@@ -5,6 +5,8 @@ import Link from "next/link";
 import { money } from "@/lib/format";
 
 export default function ProductCard({ product, onAddToCart, onToggleWishlist }) {
+  const outOfStock = product.stock <= 0;
+
   return (
     <div className="group rounded-lg border border-slate-200 bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden">
       {/* Image Container */}
@@ -21,7 +23,7 @@ export default function ProductCard({ product, onAddToCart, onToggleWishlist }) 
           </div>
         )}
         
-        {product.stock <= 0 && (
+        {outOfStock && (
           <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
             <span className="bg-red-500 text-white px-3 py-1 rounded font-bold">Out of Stock</span>
           </div>
@@ -72,10 +74,10 @@ export default function ProductCard({ product, onAddToCart, onToggleWishlist }) 
         <div className="flex gap-2 mt-auto">
           <button
             onClick={() => onAddToCart?.(product)}
-            disabled={product.stock <= 0}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-bold py-2 rounded text-sm transition"
+            disabled={outOfStock}
+            className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-300 text-white font-bold py-2 rounded text-sm transition"
           >
-            🛒 Add
+            {outOfStock ? "Out of Stock" : "Add"}
           </button>
           <button
             onClick={() => onToggleWishlist?.(product)}

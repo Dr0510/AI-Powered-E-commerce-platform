@@ -26,12 +26,12 @@ function ReadyAuthControls({ compact }) {
       ) : (
         <>
           <SignInButton mode="modal">
-            <button className="rounded border border-slate-300 bg-white px-3 py-2 text-sm font-bold text-slate-950" type="button">
+            <button className="rounded border border-[#d8cbbb] bg-white px-3 py-2 text-sm font-bold text-[#171412]" type="button">
               Sign in
             </button>
           </SignInButton>
           <SignUpButton mode="modal">
-            <button className="rounded bg-[#ffd814] px-3 py-2 text-sm font-black text-slate-950" type="button">
+            <button className="rounded bg-[#123f3a] px-3 py-2 text-sm font-black text-white" type="button">
               Sign up
             </button>
           </SignUpButton>

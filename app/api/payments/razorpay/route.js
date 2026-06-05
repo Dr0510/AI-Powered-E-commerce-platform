@@ -85,9 +85,9 @@ async function putHandler(request) {
       return Response.json({ message: "Order not found" }, { status: 404 });
     }
 
-    await markOrderPaid(order, { razorpay_order_id, razorpay_payment_id, razorpay_signature });
+    const paidOrder = await markOrderPaid(order, { razorpay_order_id, razorpay_payment_id, razorpay_signature });
 
-    return Response.json({ order: presentOrder(order) });
+    return Response.json({ order: presentOrder(paidOrder) });
   } catch (error) {
     return Response.json({ message: error.message }, { status: 500 });
   }

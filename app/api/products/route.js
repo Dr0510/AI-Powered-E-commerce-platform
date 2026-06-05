@@ -146,6 +146,12 @@ async function postHandler(request) {
         )
         RETURNING id, title, slug, description, price_in_paise, category, image, images, stock, active, tags, embedding, created_at, updated_at
       `;
+      await sql`
+        INSERT INTO inventory (product_id, quantity_on_hand)
+        VALUES (${product.id}, ${payload.stock})
+        ON CONFLICT (product_id)
+        DO UPDATE SET quantity_on_hand = EXCLUDED.quantity_on_hand, updated_at = now()
+      `;
 
       // Invalidate product cache after successful POST
       invalidateProductCache();

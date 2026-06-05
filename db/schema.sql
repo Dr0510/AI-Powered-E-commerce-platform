@@ -127,6 +127,10 @@ CREATE TABLE IF NOT EXISTS payments (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS receipt_email_sent_at timestamptz;
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS receipt_email_status text NOT NULL DEFAULT 'pending';
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS receipt_email_error text;
+
 CREATE TABLE IF NOT EXISTS reviews (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   product_id uuid NOT NULL REFERENCES products(id) ON DELETE CASCADE,

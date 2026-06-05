@@ -12,7 +12,7 @@ export async function GET() {
 
   const sql = db();
 
-  const [productCounts, userCounts, orderCounts, revenueRows, lowStock, recentOrders] = await Promise.all([
+  const [productCounts, userCounts, orderCounts, revenueRows, lowStock, recentOrders, recentUsers] = await Promise.all([
     sql`SELECT count(*)::int AS count FROM products WHERE active = true`,
     sql`SELECT count(*)::int AS count FROM users`,
     sql`SELECT count(*)::int AS count FROM orders`,
@@ -25,6 +25,23 @@ export async function GET() {
       LIMIT 8
     `,
     listOrders({ limit: 8 }),
+    sql`
+      SELECT
+        u.id,
+        u.clerk_id,
+        u.name,
+        u.email,
+        u.role,
+        u.created_at,
+        u.updated_at,
+        count(o.id)::int AS order_count,
+        COALESCE(sum(o.total_in_paise) FILTER (WHERE o.status = 'paid'), 0)::int AS total_spent_in_paise
+      FROM users u
+      LEFT JOIN orders o ON o.user_id = u.id
+      GROUP BY u.id, u.clerk_id, u.name, u.email, u.role, u.created_at, u.updated_at
+      ORDER BY u.created_at DESC
+      LIMIT 25
+    `,
   ]);
 
   return Response.json({
@@ -35,5 +52,17 @@ export async function GET() {
     revenueInPaise: revenueRows[0]?.total || 0,
     lowStock: lowStock.map(productFromRow).map(presentProduct),
     recentOrders: recentOrders.map(presentOrder),
+    recentUsers: recentUsers.map((user) => ({
+      _id: user.id,
+      id: user.id,
+      clerkId: user.clerk_id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      orderCount: Number(user.order_count || 0),
+      totalSpentInPaise: Number(user.total_spent_in_paise || 0),
+      createdAt: user.created_at,
+      updatedAt: user.updated_at,
+    })),
   });
 }

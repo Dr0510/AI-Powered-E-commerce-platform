@@ -99,6 +99,14 @@ export async function PATCH(request, { params }) {
     `;
 
     if (!product) throw new NotFoundError("Product not found");
+    if (stock !== null) {
+      await sql`
+        INSERT INTO inventory (product_id, quantity_on_hand)
+        VALUES (${id}, ${stock})
+        ON CONFLICT (product_id)
+        DO UPDATE SET quantity_on_hand = EXCLUDED.quantity_on_hand, updated_at = now()
+      `;
+    }
     invalidateProductCache();
     return Response.json({ product: presentProduct(productFromRow(product)) });
   } catch (error) {

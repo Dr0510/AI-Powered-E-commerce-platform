@@ -2,6 +2,7 @@ import { db } from "@/lib/db";
 import { markOrderPaid, presentOrder } from "@/lib/orders";
 import { verifyWebhookSignature } from "@/lib/razorpay";
 import { getOrderById, getOrderByRazorpayOrderId } from "@/lib/postgres";
+import { ensureDatabaseSchema } from "@/lib/schema";
 
 export async function POST(request) {
   const body = await request.text();
@@ -9,6 +10,8 @@ export async function POST(request) {
   const eventId = request.headers.get("x-razorpay-event-id");
 
   try {
+    await ensureDatabaseSchema();
+
     if (!signature || !verifyWebhookSignature(body, signature)) {
       return Response.json({ message: "Invalid webhook signature" }, { status: 400 });
     }
@@ -41,12 +44,12 @@ export async function POST(request) {
       return Response.json({ message: "Order not found for webhook" }, { status: 202 });
     }
 
-    await markOrderPaid(order, {
+    const paidOrder = await markOrderPaid(order, {
       razorpayOrderId: payment.order_id,
       razorpayPaymentId: payment.id,
     });
 
-    return Response.json({ order: presentOrder(order) });
+    return Response.json({ order: presentOrder(paidOrder) });
   } catch (error) {
     return Response.json({ message: "Webhook failed", error: error.message }, { status: 500 });
   }

@@ -27,6 +27,29 @@ const emptyProduct = {
 const fulfillmentOptions = ["unfulfilled", "packed", "shipped", "delivered", "cancelled"];
 
 async function fetchAdminData() {
+  const authData = await api("/api/auth/me");
+  if (!authData.user) {
+    return {
+      user: null,
+      needsSignIn: true,
+      stats: null,
+      products: [],
+      orders: [],
+      users: [],
+    };
+  }
+
+  if (authData.user.role !== "admin") {
+    return {
+      user: authData.user,
+      needsAdmin: true,
+      stats: null,
+      products: [],
+      orders: [],
+      users: [],
+    };
+  }
+
   const [statsData, productData, orderData] = await Promise.all([
     api("/api/admin/stats"),
     api("/api/products?includeInactive=true"),
@@ -34,9 +57,11 @@ async function fetchAdminData() {
   ]);
 
   return {
+    user: authData.user,
     stats: statsData,
     products: productData.products,
     orders: orderData.orders,
+    users: statsData.recentUsers || [],
   };
 }
 
@@ -44,6 +69,10 @@ export default function AdminPage() {
   const [stats, setStats] = useState(null);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [adminUser, setAdminUser] = useState(null);
+  const [accessState, setAccessState] = useState("loading");
+  const [loadError, setLoadError] = useState("");
   const [form, setForm] = useState(emptyProduct);
   const [editingId, setEditingId] = useState("");
   const [busy, setBusy] = useState(false);
@@ -54,13 +83,36 @@ export default function AdminPage() {
   const canUpload = Boolean(cloudinaryConfig?.cloudName && cloudinaryConfig?.apiKey);
 
   async function loadAdmin() {
+    setLoadError("");
+    setAccessState("loading");
     try {
       const data = await fetchAdminData();
+      setAdminUser(data.user);
+      if (data.needsSignIn) {
+        setStats(null);
+        setProducts([]);
+        setOrders([]);
+        setUsers([]);
+        setAccessState("signed-out");
+        return;
+      }
+      if (data.needsAdmin) {
+        setStats(null);
+        setProducts([]);
+        setOrders([]);
+        setUsers([]);
+        setAccessState("forbidden");
+        return;
+      }
       setStats(data.stats);
       setProducts(data.products);
       setOrders(data.orders);
+      setUsers(data.users);
+      setAccessState("ready");
       showToast("Dashboard loaded", "success", 2000);
     } catch (error) {
+      setAccessState("error");
+      setLoadError(error.message);
       showToast(error.message, "error");
     }
   }
@@ -74,13 +126,26 @@ export default function AdminPage() {
           return;
         }
 
+        setAdminUser(data.user);
+        if (data.needsSignIn) {
+          setAccessState("signed-out");
+          return;
+        }
+        if (data.needsAdmin) {
+          setAccessState("forbidden");
+          return;
+        }
         setStats(data.stats);
         setProducts(data.products);
         setOrders(data.orders);
+        setUsers(data.users);
+        setAccessState("ready");
         showToast("Dashboard loaded", "success", 2000);
       })
       .catch((error) => {
         if (active) {
+          setAccessState("error");
+          setLoadError(error.message);
           showToast(error.message, "error");
         }
       });
@@ -192,6 +257,25 @@ export default function AdminPage() {
     }
   }
 
+  async function updateProductStock(productId, stock) {
+    const nextStock = Math.max(0, Math.floor(Number(stock || 0)));
+    setBusy(true);
+    try {
+      const saved = await api(`/api/products/${productId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ stock: nextStock }),
+      });
+      setProducts((current) => current.map((product) => (
+        product._id === productId ? saved.product : product
+      )));
+      showToast(nextStock === 0 ? "Product marked Out of Stock" : "Stock updated", "success");
+    } catch (error) {
+      showToast(error.message, "error");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   async function updateOrder(orderId, fulfillmentStatus) {
     setBusy(true);
     try {
@@ -244,10 +328,10 @@ export default function AdminPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-100 text-slate-950">
-      <header className="bg-[#131921] px-4 py-3 text-white">
+    <main className="luxury-shell min-h-screen text-slate-950">
+      <header className="bg-[#123f3a] px-4 py-3 text-white">
         <div className="mx-auto flex max-w-7xl items-center justify-between gap-4">
-          <Link className="font-black" href="/">DR Mart Admin</Link>
+          <Link className="font-black" href="/">DR MART Admin</Link>
           <nav className="flex items-center gap-4 text-sm font-bold">
             <Link href="/">Storefront</Link>
             <Link href="/orders">Orders</Link>
@@ -260,7 +344,8 @@ export default function AdminPage() {
         <div className="flex flex-col justify-between gap-3 md:flex-row md:items-end">
           <div>
             <h1 className="text-3xl font-black">Admin Dashboard</h1>
-            {!stats && <div className="mt-2"><LoadingSpinner size="sm" /></div>}
+            {accessState === "loading" && <div className="mt-2"><LoadingSpinner size="sm" /></div>}
+            {adminUser ? <p className="mt-1 text-sm font-bold text-slate-600">{adminUser.email}</p> : null}
           </div>
           <button
             className="rounded bg-slate-900 px-4 py-2 text-sm font-black text-white disabled:opacity-50"
@@ -272,6 +357,33 @@ export default function AdminPage() {
           </button>
         </div>
 
+        {accessState === "signed-out" ? (
+          <AccessPanel
+            title="Sign in required"
+            message="Please sign in with an admin account to load products, orders, users, and dashboard metrics."
+          />
+        ) : null}
+
+        {accessState === "forbidden" ? (
+          <AccessPanel
+            title="Admin access required"
+            message={`${adminUser?.email || "This account"} is signed in, but it is not listed as an admin. Add this email to ADMIN_EMAILS in your environment and restart the dev server.`}
+          />
+        ) : null}
+
+        {accessState === "error" ? (
+          <AccessPanel
+            title="Unable to load admin data"
+            message={loadError || "Refresh the page or check your environment configuration."}
+          />
+        ) : null}
+
+        {accessState !== "ready" ? (
+          <ToastContainer toast={toast} />
+        ) : null}
+
+        {accessState === "ready" ? (
+          <>
         {stats ? (
           <div className="mt-5 grid gap-4 md:grid-cols-4">
             <Metric label="Revenue" value={money(stats.revenue)} />
@@ -394,17 +506,17 @@ export default function AdminPage() {
                   >
                     {({ open }) => (
                       <button
-                        className="w-full rounded bg-[#2874f0] px-4 py-2 text-sm font-black text-white hover:bg-[#1f5cb3]"
+                        className="w-full rounded bg-[#123f3a] px-4 py-2 text-sm font-black text-white hover:bg-[#1d6b62]"
                         onClick={() => open()}
                         type="button"
                       >
-                        📤 Upload Image to Cloudinary
+                        Upload Image to Cloudinary
                       </button>
                     )}
                   </CldUploadWidget>
                 ) : (
                   <p className="rounded bg-red-50 p-2 text-xs text-red-700">
-                    ⚠️ Cloudinary is not configured. Check your .env file.
+                    Cloudinary is not configured. Check your .env file.
                   </p>
                 )}
 
@@ -416,7 +528,7 @@ export default function AdminPage() {
                     </div>
                     <div className="h-2 rounded bg-slate-200 overflow-hidden">
                       <div
-                        className="h-full bg-[#2874f0] transition-all"
+                        className="h-full bg-[#123f3a] transition-all"
                         style={{ width: `${uploadProgress}%` }}
                       />
                     </div>
@@ -425,7 +537,7 @@ export default function AdminPage() {
               </div>
 
               <button
-                className="w-full rounded bg-[#ffd814] px-4 py-3 font-black disabled:opacity-50 hover:bg-[#e8c200]"
+                className="w-full rounded bg-[#123f3a] px-4 py-3 font-black text-white disabled:opacity-50 hover:bg-[#1d6b62]"
                 disabled={busy || !form.images?.length}
                 type="submit"
               >
@@ -435,7 +547,7 @@ export default function AdminPage() {
           </section>
 
           <section className="rounded bg-white p-5 shadow-sm">
-            <h2 className="text-xl font-black">Catalog ({products.length})</h2>
+            <h2 className="text-xl font-black">Catalog Stock ({products.length})</h2>
             <div className="mt-4 grid gap-3 md:grid-cols-2 max-h-96 overflow-y-auto">
               {products.length === 0 ? (
                 <p className="col-span-2 text-center text-slate-500 py-8">No products yet. Create one to get started!</p>
@@ -456,10 +568,34 @@ export default function AdminPage() {
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-black text-sm">{product.title}</p>
                         <p className="text-xs text-slate-500">{product.category}</p>
-                        <p className="font-black text-sm">
-                          {money(product.price)} · {product.stock} left
-                        </p>
+                        <p className="font-black text-sm">{money(product.price)}</p>
+                        <span className={`mt-1 inline-flex rounded px-2 py-1 text-xs font-black ${product.stock > 0 ? "bg-green-50 text-green-700" : "bg-red-50 text-red-700"}`}>
+                          {product.stock > 0 ? `${product.stock} units available` : "Out of Stock"}
+                        </span>
                       </div>
+                    </div>
+                    <div className="mt-3 grid grid-cols-[1fr_auto] gap-2">
+                      <input
+                        className="min-w-0 rounded border px-3 py-2 text-sm font-bold"
+                        disabled={busy}
+                        min="0"
+                        onKeyDown={(event) => {
+                          if (event.key === "Enter") {
+                            updateProductStock(product._id, event.currentTarget.value);
+                          }
+                        }}
+                        placeholder="Units"
+                        type="number"
+                        defaultValue={product.stock}
+                      />
+                      <button
+                        className="rounded bg-slate-900 px-3 py-2 text-xs font-bold text-white disabled:opacity-50"
+                        disabled={busy}
+                        onClick={(event) => updateProductStock(product._id, event.currentTarget.previousElementSibling.value)}
+                        type="button"
+                      >
+                        Set
+                      </button>
                     </div>
                     <div className="mt-3 flex gap-2">
                       <button
@@ -526,10 +662,68 @@ export default function AdminPage() {
             ) : null}
           </div>
         </section>
+
+        <section className="mt-5 rounded bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-black">User List ({users.length})</h2>
+              <p className="mt-1 text-sm text-slate-500">Latest customers synced from authentication and checkout activity.</p>
+            </div>
+            <span className="rounded bg-slate-100 px-3 py-2 text-xs font-bold text-slate-600">
+              Total users: {stats?.users || 0}
+            </span>
+          </div>
+          <div className="mt-4 overflow-x-auto">
+            {users.length ? (
+              <table className="w-full min-w-[760px] text-left text-sm">
+                <thead>
+                  <tr className="border-b border-slate-200 text-xs uppercase text-slate-500">
+                    <th className="py-2 pr-3">Name</th>
+                    <th className="py-2 pr-3">Email</th>
+                    <th className="py-2 pr-3">Role</th>
+                    <th className="py-2 pr-3">Orders</th>
+                    <th className="py-2 pr-3">Paid Spend</th>
+                    <th className="py-2 pr-3">Joined</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map((user) => (
+                    <tr className="border-b border-slate-100" key={user._id}>
+                      <td className="py-3 pr-3 font-black">{user.name || "Customer"}</td>
+                      <td className="py-3 pr-3 text-slate-600">{user.email || "No email"}</td>
+                      <td className="py-3 pr-3">
+                        <span className="rounded bg-slate-100 px-2 py-1 text-xs font-bold uppercase text-slate-700">{user.role}</span>
+                      </td>
+                      <td className="py-3 pr-3 font-bold">{user.orderCount}</td>
+                      <td className="py-3 pr-3 font-bold">{money((user.totalSpentInPaise || 0) / 100)}</td>
+                      <td className="py-3 pr-3 text-slate-500">{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Unknown"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            ) : (
+              <p className="rounded bg-slate-50 p-4 text-center text-slate-500">No users found yet.</p>
+            )}
+          </div>
+        </section>
+          </>
+        ) : null}
       </section>
 
       <ToastContainer toast={toast} />
     </main>
+  );
+}
+
+function AccessPanel({ title, message }) {
+  return (
+    <section className="mt-5 rounded bg-white p-5 shadow-sm">
+      <h2 className="text-xl font-black">{title}</h2>
+      <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">{message}</p>
+      <div className="mt-4">
+        <AuthControls />
+      </div>
+    </section>
   );
 }
 

@@ -9,7 +9,7 @@ A production-ready e-commerce web application built with Next.js, React, Tailwin
 - User authentication with Clerk
 - Admin product and order management
 - Razorpay checkout and webhook handling
-- Order history and receipt generation
+- Order history, receipt generation, and customer receipt emails
 - Product reviews
 - AI assistant integration
 - Neon PostgreSQL persistence with normalized relational tables
@@ -91,7 +91,12 @@ CLOUDINARY_API_SECRET=
 RAZORPAY_KEY_ID=
 RAZORPAY_KEY_SECRET=
 RAZORPAY_WEBHOOK_SECRET=
+
+RESEND_API_KEY=
+RESEND_FROM_EMAIL=onboarding@resend.dev
 ```
+
+Receipt emails are sent automatically after a Razorpay payment is marked paid. Customers can also resend a receipt from the Orders page.
 
 ## GitHub Setup
 

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { money } from "@/lib/format";
+import { StoreHeader, StatusPill } from "@/components/StoreShell";
 
 const payableStatuses = new Set(["pending", "payment_pending", "payment_failed"]);
 
@@ -43,12 +44,13 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState([]);
   const [status, setStatus] = useState("Loading orders...");
   const [downloading, setDownloading] = useState(null);
+  const [emailing, setEmailing] = useState(null);
   const [paying, setPaying] = useState(null);
 
   async function loadOrders() {
     const nextOrders = await fetchOrders();
     setOrders(nextOrders);
-    setStatus(nextOrders.length ? "Track every DR Mart order here." : "No orders yet.");
+    setStatus(nextOrders.length ? "Track every DR MART order here." : "No orders yet.");
   }
 
   useEffect(() => {
@@ -61,7 +63,7 @@ export default function OrdersPage() {
         }
 
         setOrders(nextOrders);
-        setStatus(nextOrders.length ? "Track every DR Mart order here." : "No orders yet.");
+        setStatus(nextOrders.length ? "Track every DR MART order here." : "No orders yet.");
       })
       .catch((error) => {
         if (active) {
@@ -114,6 +116,24 @@ export default function OrdersPage() {
     window.open(`/api/orders/receipt?orderId=${orderId}&format=view`, "_blank");
   };
 
+  const handleEmailReceipt = async (orderId) => {
+    setEmailing(orderId);
+    setStatus(`Emailing receipt for order #${orderId.slice(-8)}...`);
+
+    try {
+      await api("/api/orders/receipt", {
+        method: "POST",
+        body: JSON.stringify({ orderId }),
+      });
+      await loadOrders();
+      setStatus(`Receipt emailed for order #${orderId.slice(-8)}.`);
+    } catch (error) {
+      setStatus(error.message);
+    } finally {
+      setEmailing(null);
+    }
+  };
+
   const handleRepayment = async (order) => {
     setPaying(order._id);
     setStatus(`Opening payment for order #${order._id.slice(-8)}...`);
@@ -131,7 +151,7 @@ export default function OrdersPage() {
           key: payment.keyId,
           amount: payment.amountInPaise,
           currency: payment.currency,
-          name: "DR Mart",
+          name: "DR MART",
           description: `Order #${payment.localOrderId.slice(-6)}`,
           order_id: payment.razorpayOrderId,
           prefill: {
@@ -141,9 +161,7 @@ export default function OrdersPage() {
           notes: {
             localOrderId: payment.localOrderId,
           },
-          theme: {
-            color: "#2874f0",
-          },
+          theme: { color: "#123f3a" },
           handler: async (response) => {
             try {
               await api("/api/payments/razorpay", {
@@ -180,41 +198,42 @@ export default function OrdersPage() {
   };
 
   return (
-    <main className="min-h-screen bg-slate-100 text-slate-950">
-      <Header />
-      <section className="mx-auto max-w-7xl p-4">
-        <div className="rounded bg-white p-5 shadow-sm">
-          <h1 className="text-3xl font-black">Orders & Tracking</h1>
-          <p className="mt-2 text-slate-500">{status}</p>
+    <main className="luxury-shell min-h-screen text-[#171412]">
+      <StoreHeader />
+      <section className="mx-auto max-w-7xl px-4 py-6">
+        <div className="glass-panel rounded p-5">
+          <StatusPill tone="gold">Order history</StatusPill>
+          <h1 className="mt-3 text-3xl font-black">Orders & Tracking</h1>
+          <p className="mt-2 text-[#7c6a55]">{status}</p>
           <div className="mt-5 space-y-4">
             {orders.map((order) => (
-              <article className="rounded border border-slate-200 p-4" key={order._id}>
+              <article className="rounded border border-[#e3d7c7] bg-[#fffaf1] p-4" key={order._id}>
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
                     <h2 className="font-black">Order #{order._id.slice(-8)}</h2>
-                    <p className="text-sm uppercase text-green-700">{order.status}</p>
+                    <p className="text-sm font-black uppercase text-[#1d6b62]">{order.status}</p>
                   </div>
                   <p className="text-xl font-black">{money(order.total)}</p>
                 </div>
                 <div className="mt-4 grid gap-2 md:grid-cols-4">
                   {["pending", "paid", "packed", "shipped", "delivered"].map((step) => (
-                    <div className={`rounded p-3 text-sm font-bold ${step === order.status ? "bg-blue-100 text-blue-900" : "bg-slate-50"}`} key={step}>
+                    <div className={`rounded p-3 text-sm font-bold ${step === order.status ? "bg-[#123f3a] text-white" : "bg-[#f4efe7] text-[#7c6a55]"}`} key={step}>
                       {step}
                     </div>
                   ))}
                 </div>
 
                 {payableStatuses.has(order.status) && (
-                  <div className="mt-4 rounded border border-amber-200 bg-amber-50 p-3">
+                  <div className="mt-4 rounded border border-[#c38b46] bg-[#f7e3bd] p-3">
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <div>
-                        <p className="text-sm font-black text-amber-900">Payment pending</p>
-                        <p className="text-sm text-amber-800">Complete payment to confirm this order.</p>
+                        <p className="text-sm font-black text-[#6d4618]">Payment pending</p>
+                        <p className="text-sm text-[#6d4618]">Complete payment to confirm this order.</p>
                       </div>
                       <button
                         onClick={() => handleRepayment(order)}
                         disabled={paying === order._id}
-                        className="rounded bg-[#ffd814] px-4 py-2 text-sm font-black text-slate-950 transition hover:bg-[#e8c200] disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded bg-[#123f3a] px-4 py-2 text-sm font-black text-white transition hover:bg-[#1d6b62] disabled:cursor-not-allowed disabled:opacity-50"
                         type="button"
                       >
                         {paying === order._id ? "Opening payment..." : "Pay Now"}
@@ -228,35 +247,33 @@ export default function OrdersPage() {
                   <div className="mt-4 flex gap-2 flex-wrap">
                     <button
                       onClick={() => handleViewReceipt(order._id)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded text-sm font-bold transition"
+                      className="rounded bg-[#123f3a] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#1d6b62]"
                     >
-                      📄 View Receipt
+                      View Receipt
                     </button>
                     <button
                       onClick={(e) => handleDownloadPDF(order._id, e)}
                       disabled={downloading === order._id}
-                      className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded text-sm font-bold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="rounded border border-[#123f3a] px-4 py-2 text-sm font-bold text-[#123f3a] transition disabled:cursor-not-allowed disabled:opacity-50"
                     >
-                      {downloading === order._id ? "⏳ Downloading..." : "⬇️ Download HTML"}
+                      {downloading === order._id ? "Downloading..." : "Download HTML"}
+                    </button>
+                    <button
+                      onClick={() => handleEmailReceipt(order._id)}
+                      disabled={emailing === order._id}
+                      className="rounded border border-[#c38b46] px-4 py-2 text-sm font-bold text-[#6d4618] transition hover:bg-[#f7e3bd] disabled:cursor-not-allowed disabled:opacity-50"
+                      type="button"
+                    >
+                      {emailing === order._id ? "Emailing..." : "Email Receipt"}
                     </button>
                   </div>
                 )}
               </article>
             ))}
+            {!orders.length ? <p className="rounded bg-[#fffaf1] p-5 text-[#7c6a55]">No orders yet.</p> : null}
           </div>
         </div>
       </section>
     </main>
-  );
-}
-
-function Header() {
-  return (
-    <header className="bg-[#131921] px-4 py-3 text-white">
-      <div className="mx-auto flex max-w-7xl items-center justify-between">
-        <Link className="font-black" href="/">DR Mart</Link>
-        <nav className="flex gap-4 text-sm font-bold"><Link href="/cart">Cart</Link><Link href="/wishlist">Wishlist</Link></nav>
-      </div>
-    </header>
   );
 }
