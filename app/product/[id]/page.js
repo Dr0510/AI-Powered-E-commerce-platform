@@ -67,6 +67,7 @@ export default function ProductPage({ params }) {
   const [saved, setSaved] = useState(false);
   const [savingWishlist, setSavingWishlist] = useState(false);
   const [saveFlash, setSaveFlash] = useState(false);
+  const [buyingNow, setBuyingNow] = useState(false);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -127,7 +128,11 @@ export default function ProductPage({ params }) {
     setCart(nextCart);
     setStatus(immediate ? "Added to cart. Opening cart..." : "Added to cart.");
     if (immediate) {
-      router.push("/cart");
+      setBuyingNow(true);
+      window.setTimeout(() => {
+        setBuyingNow(false);
+        router.push("/cart");
+      }, 650);
     }
   }
 
@@ -269,7 +274,29 @@ export default function ProductPage({ params }) {
           <p className="mt-2 text-sm font-bold text-[#1d6b62]">{deliveryEstimate(product.stock)}</p>
           {outOfStock ? <p className="mt-4 rounded bg-red-50 p-3 text-sm font-black text-red-700">Out of Stock</p> : null}
           <button className="mt-5 w-full rounded bg-[#123f3a] px-4 py-3 font-black text-white hover:bg-[#1d6b62] disabled:cursor-not-allowed disabled:bg-slate-300" disabled={outOfStock} onClick={() => addToCart(false)} type="button">Add to Cart</button>
-          <button className="mt-3 w-full rounded bg-[#f4d7a1] px-4 py-3 font-black text-[#123f3a] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500" disabled={outOfStock} onClick={() => addToCart(true)} type="button">Buy Now</button>
+          <button
+            className={`buy-now-btn mt-3 w-full rounded px-4 py-3 font-black transition-all duration-150
+              ${outOfStock
+                ? "cursor-not-allowed bg-slate-200 text-slate-500"
+                : buyingNow
+                  ? "scale-[0.97] bg-[#d8a84a] text-[#123f3a] shadow-inner"
+                  : "bg-[#f4d7a1] text-[#123f3a] hover:bg-[#edc97a] hover:shadow-md active:scale-[0.97] active:bg-[#d8a84a] active:shadow-inner"
+              }`}
+            disabled={outOfStock || buyingNow}
+            onClick={() => addToCart(true)}
+            type="button"
+          >
+            <span className="inline-flex items-center justify-center gap-2">
+              {buyingNow ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#123f3a] border-t-transparent" />
+                  Processing…
+                </>
+              ) : (
+                "Buy Now"
+              )}
+            </span>
+          </button>
           <button
             className={`mt-3 w-full rounded border px-4 py-3 font-black transition ${saved ? "border-[#1d6b62] bg-[#dff1e9] text-[#145347]" : "border-[#c38b46] text-[#6d4618] hover:bg-[#f7e3bd]"} ${savingWishlist ? "scale-[0.98]" : ""}`}
             disabled={savingWishlist}

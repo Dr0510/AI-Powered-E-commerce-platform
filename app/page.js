@@ -1,11 +1,22 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { discountFor, money, moneyFromPaise, priceInPaise, ratingFor } from "@/lib/format";
 import { StoreHeader, StatusPill, deliveryEstimate } from "@/components/StoreShell";
+
+function ripple(event) {
+  const btn = event.currentTarget;
+  const dot = document.createElement("span");
+  const rect = btn.getBoundingClientRect();
+  dot.className = "btn-ripple-dot";
+  dot.style.top = `${event.clientY - rect.top}px`;
+  dot.style.left = `${event.clientX - rect.left}px`;
+  btn.appendChild(dot);
+  dot.addEventListener("animationend", () => dot.remove());
+}
 
 const shippingDefaults = {
   name: "",
@@ -57,6 +68,9 @@ export default function Home() {
   const [busy, setBusy] = useState(false);
   const [formErrors, setFormErrors] = useState({});
   const [savingProductId, setSavingProductId] = useState("");
+  const [removingProductId, setRemovingProductId] = useState("");
+  const [cartAddedId, setCartAddedId] = useState("");
+  const [buyNowId, setBuyNowId] = useState("");
   const [savedProductIds, setSavedProductIds] = useState([]);
   const [saveNotice, setSaveNotice] = useState("");
 
@@ -157,20 +171,40 @@ export default function Home() {
       return next;
     });
     setStatus(immediate ? "Item added. Complete checkout on the right." : "Added to cart.");
+    if (!immediate) {
+      setCartAddedId(product._id);
+      window.setTimeout(() => setCartAddedId(""), 900);
+    }
   }
 
-  function addToWishlist(product) {
-    setSavingProductId(product._id);
-    setSaveNotice("");
+  function toggleWishlist(product) {
     const current = JSON.parse(localStorage.getItem("dr_wishlist") || "[]");
-    const item = { ...cartItem(product), category: product.category };
-    localStorage.setItem("dr_wishlist", JSON.stringify([item, ...current.filter((entry) => entry.productId !== product._id)]));
-    window.setTimeout(() => {
-      setSavedProductIds((ids) => Array.from(new Set([product._id, ...ids])));
-      setSavingProductId("");
-      setSaveNotice(`${product.title} saved to wishlist.`);
-      setStatus("Saved to wishlist.");
-    }, 420);
+    const alreadySaved = savedProductIds.includes(product._id);
+    setSaveNotice("");
+
+    if (alreadySaved) {
+      // Remove from wishlist
+      setRemovingProductId(product._id);
+      const updated = current.filter((entry) => entry.productId !== product._id);
+      localStorage.setItem("dr_wishlist", JSON.stringify(updated));
+      window.setTimeout(() => {
+        setSavedProductIds((ids) => ids.filter((id) => id !== product._id));
+        setRemovingProductId("");
+        setSaveNotice(`${product.title} removed from wishlist.`);
+        setStatus("Removed from wishlist.");
+      }, 420);
+    } else {
+      // Add to wishlist
+      setSavingProductId(product._id);
+      const item = { ...cartItem(product), category: product.category };
+      localStorage.setItem("dr_wishlist", JSON.stringify([item, ...current.filter((entry) => entry.productId !== product._id)]));
+      window.setTimeout(() => {
+        setSavedProductIds((ids) => Array.from(new Set([product._id, ...ids])));
+        setSavingProductId("");
+        setSaveNotice(`${product.title} saved to wishlist.`);
+        setStatus("Saved to wishlist.");
+      }, 420);
+    }
   }
 
   function updateCart(productId, quantity) {
@@ -305,14 +339,14 @@ export default function Home() {
                   {categories.map((item) => <option key={item} value={item}>{item}</option>)}
                 </select>
                 <input className="rounded border-0 bg-white px-4 py-3 text-sm text-[#171412] outline-none" onChange={(event) => setQuery(event.target.value)} placeholder="Search handcrafted bags, phones, appliances..." value={query} />
-                <button className="rounded bg-[#f4d7a1] px-5 py-3 text-sm font-black text-[#123f3a] disabled:opacity-60" disabled={busy} type="submit">Search</button>
+                <button className="btn-gold px-5 py-3 text-sm disabled:opacity-60" disabled={busy} onClick={ripple} type="submit">Search</button>
               </form>
             </div>
             <div className="rounded border border-white/20 bg-white/12 p-5">
               <p className="text-sm font-bold text-[#f4d7a1]">Today’s collection</p>
               <p className="mt-2 text-3xl font-black">{visibleProducts.length} pieces</p>
               <p className="mt-2 text-sm text-[#f6efe4]">Sorted by quality signals, stock confidence, seller reliability, and savings.</p>
-              <button className="mt-5 rounded bg-white px-4 py-2 text-sm font-black text-[#123f3a]" onClick={seedProducts} type="button">Load demo catalog</button>
+              <button className="btn-ghost mt-5 px-4 py-2 text-sm" onClick={(e) => { ripple(e); seedProducts(); }} type="button">Load demo catalog</button>
             </div>
           </div>
         </div>
@@ -322,9 +356,9 @@ export default function Home() {
             <section className="glass-panel rounded p-4">
               <h2 className="font-black">Explore</h2>
               <div className="mt-3 grid gap-2">
-                <button className={`rounded px-3 py-2 text-left text-sm font-bold ${!category ? "bg-[#123f3a] text-white" : "hover:bg-[#efe4d4]"}`} onClick={() => chooseCategory("")} type="button">All products</button>
+                <button className={`btn-category px-3 py-2 text-left text-sm font-bold ${!category ? "bg-[#123f3a] text-white active" : "hover:bg-[#efe4d4]"}`} onClick={(e) => { ripple(e); chooseCategory(""); }} type="button">All products</button>
                 {categories.map((item) => (
-                  <button className={`rounded px-3 py-2 text-left text-sm ${category === item ? "bg-[#123f3a] font-bold text-white" : "hover:bg-[#efe4d4]"}`} key={item} onClick={() => chooseCategory(item)} type="button">{item}</button>
+                  <button className={`btn-category px-3 py-2 text-left text-sm ${category === item ? "bg-[#123f3a] font-bold text-white active" : "hover:bg-[#efe4d4]"}`} key={item} onClick={(e) => { ripple(e); chooseCategory(item); }} type="button">{item}</button>
                 ))}
               </div>
             </section>
@@ -379,7 +413,9 @@ export default function Home() {
                   const discount = discountFor(product);
                   const mrp = product.price / (1 - discount / 100);
                   const isSaving = savingProductId === product._id;
+                  const isRemoving = removingProductId === product._id;
                   const isSaved = savedProductIds.includes(product._id);
+                  const isCartAdded = cartAddedId === product._id;
                   return (
                     <article className="animate-rise group rounded border border-[#e3d7c7] bg-[#fffaf1] p-3 hover:-translate-y-1 hover:shadow-xl" key={product._id} style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }}>
                       <Link href={`/product/${product._id}`}>
@@ -401,20 +437,74 @@ export default function Home() {
                           <p className="text-xs font-bold text-[#1d6b62]">{discount}% off</p>
                         </div>
                         <div className="grid grid-cols-[1fr_auto] gap-2">
-                          <button className="rounded bg-[#123f3a] px-3 py-2 text-xs font-black text-white hover:bg-[#1d6b62] disabled:cursor-not-allowed disabled:bg-slate-300" disabled={product.stock <= 0} onClick={() => addToCart(product)} type="button">Add to cart</button>
+                          {/* ── Add to Cart ── */}
                           <button
-                            className={`min-w-16 rounded border px-3 py-2 text-xs font-black transition ${isSaved ? "border-[#1d6b62] bg-[#dff1e9] text-[#145347]" : "border-[#c38b46] text-[#6d4618] hover:bg-[#f7e3bd]"} ${isSaving ? "scale-95" : ""}`}
-                            disabled={isSaving}
-                            onClick={() => addToWishlist(product)}
+                            className={`btn-primary btn-cart px-3 py-2 text-xs disabled:cursor-not-allowed disabled:bg-slate-300 ${isCartAdded ? "btn-cart-success" : ""}`}
+                            disabled={product.stock <= 0}
+                            onClick={(e) => { ripple(e); addToCart(product); }}
+                            type="button"
+                          >
+                            <span className="inline-flex items-center justify-center gap-1">
+                              {isCartAdded ? (
+                                <span className="btn-check-icon">✓</span>
+                              ) : (
+                                <span className="btn-cart-icon">🛒</span>
+                              )}
+                              {isCartAdded ? "Added!" : "Add to cart"}
+                            </span>
+                          </button>
+                          {/* isBuyNow derived */}
+                          {(() => { const isBuyNow = buyNowId === product._id; return null; })()}
+
+                          {/* ── Save / Wishlist ── */}
+                          <button
+                            className={`btn-save min-w-16 border px-3 py-2 text-xs group/save ${
+                              isSaved
+                                ? "btn-save-saved border-[#1d6b62] bg-[#dff1e9] text-[#145347] hover:border-red-300 hover:bg-red-50 hover:text-red-600"
+                                : "border-[#c38b46] text-[#6d4618] hover:bg-[#f7e3bd]"
+                            } ${(isSaving || isRemoving) ? "scale-95" : ""}`}
+                            disabled={isSaving || isRemoving}
+                            onClick={(e) => { ripple(e); toggleWishlist(product); }}
                             type="button"
                           >
                             <span className="inline-flex items-center gap-1">
-                              {isSaving ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" /> : null}
-                              {isSaving ? "Saving" : isSaved ? "Saved" : "Save"}
+                              {(isSaving || isRemoving)
+                                ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                : <span className={`btn-heart-icon ${isSaved ? "btn-heart-saved" : ""}`}>{isSaved ? "♥" : "♡"}</span>
+                              }
+                              {isSaving ? "Saving…" : isRemoving ? "Removing…" : isSaved
+                                ? <><span className="group-hover/save:hidden">Saved</span><span className="hidden group-hover/save:inline">Unsave</span></>
+                                : "Save"
+                              }
                             </span>
                           </button>
                         </div>
-                        <button className="w-full rounded bg-[#f4d7a1] px-3 py-2 text-xs font-black text-[#123f3a] disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500" disabled={product.stock <= 0} onClick={() => addToCart(product, true)} type="button">Buy now</button>
+
+                        {/* ── Buy Now ── */}
+                        {(function BuyNowBtn() {
+                          const isBuyNow = buyNowId === product._id;
+                          return (
+                            <button
+                              className={`btn-buynow w-full px-3 py-2 text-xs disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500 ${isBuyNow ? "btn-buynow-success" : "btn-gold"}`}
+                              disabled={product.stock <= 0}
+                              onClick={(e) => {
+                                ripple(e);
+                                addToCart(product, true);
+                                setBuyNowId(product._id);
+                                window.setTimeout(() => setBuyNowId(""), 1000);
+                              }}
+                              type="button"
+                            >
+                              <span className="inline-flex items-center justify-center gap-1">
+                                {isBuyNow
+                                  ? <span className="btn-check-icon">✓</span>
+                                  : <span className="btn-bolt-icon">⚡</span>
+                                }
+                                {isBuyNow ? "Added to cart!" : "Buy now"}
+                              </span>
+                            </button>
+                          );
+                        })()}
                       </div>
                     </article>
                   );
@@ -463,7 +553,7 @@ export default function Home() {
                     {formErrors[key] ? <span className="text-xs font-bold text-red-600">{formErrors[key]}</span> : null}
                   </label>
                 ))}
-                <button className="w-full rounded bg-[#123f3a] px-4 py-3 font-black text-white disabled:opacity-50" disabled={!user || busy} type="submit">Pay with Razorpay</button>
+                <button className="btn-primary w-full px-4 py-3 disabled:opacity-50" disabled={!user || busy} onClick={ripple} type="submit">Pay with Razorpay</button>
                 {!user ? <p className="text-xs text-[#7c6a55]">Sign in to place an order.</p> : null}
               </form>
             </section>
