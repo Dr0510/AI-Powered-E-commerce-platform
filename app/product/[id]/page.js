@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { use, useEffect, useMemo, useState } from "react";
 import { discountFor, money, moneyFromPaise, priceInPaise, ratingFor } from "@/lib/format";
 import { StoreHeader, StatusPill, deliveryEstimate } from "@/components/StoreShell";
+import { ProductDetailSkeleton } from "@/components/SkeletonLoaders";
+import { useToast, ToastContainer } from "@/components/Toast";
 
 async function api(path, options = {}) {
   const response = await fetch(path, {
@@ -68,6 +70,8 @@ export default function ProductPage({ params }) {
   const [savingWishlist, setSavingWishlist] = useState(false);
   const [saveFlash, setSaveFlash] = useState(false);
   const [buyingNow, setBuyingNow] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const { toasts, showToast, dismissToast } = useToast();
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -85,6 +89,7 @@ export default function ProductPage({ params }) {
       setProduct(productData.product);
       setSelectedImage(productData.product.images?.[0]?.url || productData.product.image);
       setStatus("Ready");
+      setIsLoading(false);
       updateLocalList("dr_recently_viewed", {
         productId: productData.product._id,
         title: productData.product.title,
@@ -126,6 +131,7 @@ export default function ProductPage({ params }) {
       quantity: 1,
     });
     setCart(nextCart);
+    showToast("✓ Added to cart", "success");
     setStatus(immediate ? "Added to cart. Opening cart..." : "Added to cart.");
     if (immediate) {
       setBuyingNow(true);
@@ -154,6 +160,7 @@ export default function ProductPage({ params }) {
       setSaved(true);
       setSavingWishlist(false);
       setSaveFlash(true);
+      showToast("♥ Saved to wishlist", "success");
       setStatus("Saved to wishlist.");
     }, 420);
   }
@@ -206,6 +213,11 @@ export default function ProductPage({ params }) {
     <main className="luxury-shell min-h-screen text-[#171412]">
       <StoreHeader cartCount={cartCount} />
 
+      {isLoading ? (
+        <section className="mx-auto max-w-7xl px-4 py-6">
+          <ProductDetailSkeleton />
+        </section>
+      ) : (
       <section className="mx-auto grid max-w-7xl gap-5 px-4 py-6 lg:grid-cols-[460px_1fr_320px]">
         <div className="glass-panel rounded p-4">
           <div className="aspect-square rounded bg-[#f4efe7] p-5">
@@ -391,6 +403,8 @@ export default function ProductPage({ params }) {
           </div>
         </section>
       </section>
+      )}
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </main>
   );
 }
