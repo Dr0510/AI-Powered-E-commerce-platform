@@ -5,10 +5,12 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { moneyFromPaise, priceInPaise } from "@/lib/format";
 import { StoreHeader, StatusPill, deliveryEstimate } from "@/components/StoreShell";
+import { useToast, ToastContainer } from "@/components/Toast";
 
 export default function CartPage() {
   const [cart, setCart] = useState([]);
   const [mounted, setMounted] = useState(false);
+  const { toasts, showToast, dismissToast } = useToast();
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -28,6 +30,14 @@ export default function CartPage() {
   const itemCount = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
 
   function update(productId, quantity) {
+    const item = cart.find(i => i.productId === productId);
+    if (quantity === 0) {
+      showToast("Item removed from cart", "info");
+    } else if (quantity > (item?.quantity || 0)) {
+      showToast("✓ Quantity increased", "success");
+    } else if (quantity < (item?.quantity || 0)) {
+      showToast("✓ Quantity decreased", "info");
+    }
     setCart((current) => current.map((item) => (item.productId === productId ? { ...item, quantity } : item)).filter((item) => item.quantity > 0));
   }
 
@@ -76,6 +86,7 @@ export default function CartPage() {
           </Link>
         </aside>
       </section>
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </main>
   );
 }

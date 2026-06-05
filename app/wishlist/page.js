@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { moneyFromPaise, priceInPaise } from "@/lib/format";
 import { StoreHeader, StatusPill } from "@/components/StoreShell";
+import EmptyState from "@/components/EmptyState";
 
 export default function WishlistPage() {
   const [items, setItems] = useState([]);
@@ -48,7 +49,7 @@ export default function WishlistPage() {
                   <button className="rounded border border-[#c38b46] py-2 text-sm font-black text-[#6d4618]" onClick={() => remove(item)} type="button">Remove</button>
                 </div>
               </article>
-            )) : <p className="rounded bg-[#fffaf1] p-5 text-[#7c6a55]">No wishlist items yet.</p>}
+            )) : <EmptyState icon="♥" title="Wishlist is empty" description="Start saving your favorite products to build your personalized collection." actionLabel="Browse products" actionHref="/" />}
           </div>
         </div>
       </section>

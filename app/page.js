@@ -6,6 +6,9 @@ import Link from "next/link";
 import { api } from "@/lib/api";
 import { discountFor, money, moneyFromPaise, priceInPaise, ratingFor } from "@/lib/format";
 import { StoreHeader, StatusPill, deliveryEstimate } from "@/components/StoreShell";
+import { useToast, ToastContainer } from "@/components/Toast";
+import EmptyState from "@/components/EmptyState";
+import { ProductGridSkeleton } from "@/components/SkeletonLoaders";
 
 function ripple(event) {
   const btn = event.currentTarget;
@@ -73,7 +76,9 @@ export default function Home() {
   const [buyNowId, setBuyNowId] = useState("");
   const [savedProductIds, setSavedProductIds] = useState([]);
   const [saveNotice, setSaveNotice] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
 
+  const { toasts, showToast, dismissToast } = useToast();
   const cartTotal = useMemo(() => cart.reduce((sum, item) => sum + priceInPaise(item) * item.quantity, 0), [cart]);
   const cartCount = useMemo(() => cart.reduce((sum, item) => sum + item.quantity, 0), [cart]);
 
@@ -130,6 +135,7 @@ export default function Home() {
         setProducts(productData.products);
         setUser(userData.user);
         setStatus(`${productData.products.length} products ready.`);
+        setIsLoading(false);
         if (userData.user) {
           const orderData = await api("/api/orders");
           if (active) setOrders(orderData.orders);
@@ -156,12 +162,14 @@ export default function Home() {
 
   function addToCart(product, immediate = false) {
     if (product.stock <= 0) {
+      showToast(`${product.title} is out of stock`, "warn");
       setStatus(`${product.title} is Out of Stock.`);
       return;
     }
     setCart((current) => {
       const existing = current.find((item) => item.productId === product._id);
       if (existing && existing.quantity >= product.stock) {
+        showToast(`${product.title} has only ${product.stock} units available`, "warn");
         setStatus(`${product.title} has only ${product.stock} units available.`);
         return current;
       }
@@ -170,6 +178,7 @@ export default function Home() {
         : [cartItem(product), ...current];
       return next;
     });
+    showToast("✓ Added to cart", "success");
     setStatus(immediate ? "Item added. Complete checkout on the right." : "Added to cart.");
     if (!immediate) {
       setCartAddedId(product._id);
@@ -191,6 +200,7 @@ export default function Home() {
         setSavedProductIds((ids) => ids.filter((id) => id !== product._id));
         setRemovingProductId("");
         setSaveNotice(`${product.title} removed from wishlist.`);
+        showToast("Removed from wishlist", "info");
         setStatus("Removed from wishlist.");
       }, 420);
     } else {
@@ -202,6 +212,7 @@ export default function Home() {
         setSavedProductIds((ids) => Array.from(new Set([product._id, ...ids])));
         setSavingProductId("");
         setSaveNotice(`${product.title} saved to wishlist.`);
+        showToast("♥ Saved to wishlist", "success");
         setStatus("Saved to wishlist.");
       }, 420);
     }
@@ -409,7 +420,9 @@ export default function Home() {
                 <StatusPill>{visibleProducts.length} results</StatusPill>
               </div>
               <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                {visibleProducts.map((product, index) => {
+                {isLoading ? (
+                  <ProductGridSkeleton count={6} />
+                ) : visibleProducts.length > 0 ? visibleProducts.map((product, index) => {
                   const discount = discountFor(product);
                   const mrp = product.price / (1 - discount / 100);
                   const isSaving = savingProductId === product._id;
@@ -508,7 +521,7 @@ export default function Home() {
                       </div>
                     </article>
                   );
-                })}
+                })} : <EmptyState icon="🔍" title="No products found" description="Try adjusting your search or filters to find what you're looking for." actionLabel="Browse all" actionHref="/" />}
               </div>
             </section>
 
@@ -570,6 +583,7 @@ export default function Home() {
           </aside>
         </div>
       </section>
+      <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </main>
   );
 }

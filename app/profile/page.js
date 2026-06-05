@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { money } from "@/lib/format";
 import { StoreHeader, StatusPill } from "@/components/StoreShell";
+import { ProfileSkeleton } from "@/components/SkeletonLoaders";
 
 export default function ProfilePage() {
   const [user, setUser] = useState(null);
@@ -13,6 +14,7 @@ export default function ProfilePage() {
   const [wishlist, setWishlist] = useState([]);
   const [recent, setRecent] = useState([]);
   const [status, setStatus] = useState("Loading profile...");
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     let active = true;
@@ -27,6 +29,7 @@ export default function ProfilePage() {
         if (active) setOrders(orderData.orders);
       }
       if (active) setStatus(userData.user ? "Your DR MART dashboard is ready." : "Sign in to view your dashboard.");
+      if (active) setIsLoading(false);
     }
     load().catch((error) => active && setStatus(error.message));
     return () => {
@@ -44,6 +47,9 @@ export default function ProfilePage() {
           <p className="mt-2 max-w-2xl text-[#f6efe4]">{status}</p>
         </div>
 
+        {isLoading ? (
+          <ProfileSkeleton />
+        ) : (
         <div className="mt-5 grid gap-5 lg:grid-cols-[300px_1fr]">
           <aside className="glass-panel rounded p-5">
             <h2 className="text-xl font-black">Account</h2>
@@ -85,6 +91,7 @@ export default function ProfilePage() {
             </section>
           </div>
         </div>
+        )}
       </section>
     </main>
   );

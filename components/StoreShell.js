@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import AuthControls from "@/components/AuthControls";
+import ThemeToggle from "@/components/ThemeToggle";
 
 export function BrandMark() {
   return (
@@ -12,43 +14,83 @@ export function BrandMark() {
         <span className="relative text-[18px] font-black uppercase tracking-[0.08em]">DR</span>
       </span>
       <span className="leading-none">
-        <span className="brand-wordmark block text-[1.08rem] font-black uppercase text-[#141c19]">DR MART</span>
-        <span className="block pt-1 text-[10px] font-black uppercase tracking-[0.28em] text-[#8a6d43]">By DR Group</span>
+        <span className="brand-wordmark block text-[1.08rem] font-black uppercase themed-text-primary">DR MART</span>
+        <span className="block pt-1 text-[10px] font-black uppercase tracking-[0.28em]" style={{ color: "var(--brand-gold)" }}>By DR Group</span>
       </span>
     </Link>
   );
 }
 
 export function StoreHeader({ cartCount = 0, user = null }) {
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   return (
-    <header className="sticky top-0 z-40 border-b border-[#d8cbbb] bg-[#fffaf1]/92 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
-        <BrandMark />
-        <nav className="flex flex-wrap items-center gap-2 text-sm font-bold text-[#3a322a]">
-          <Link className="rounded px-3 py-2 hover:bg-[#efe4d4]" href="/">Shop</Link>
-          <Link className="rounded px-3 py-2 hover:bg-[#efe4d4]" href="/wishlist">Wishlist</Link>
-          <Link className="rounded px-3 py-2 hover:bg-[#efe4d4]" href="/orders">Orders</Link>
-          <Link className="rounded px-3 py-2 hover:bg-[#efe4d4]" href="/profile">Profile</Link>
-          <Link className="rounded bg-[#123f3a] px-3 py-2 text-white hover:bg-[#1d6b62]" href="/cart">
-            Cart {cartCount ? `(${cartCount})` : ""}
-          </Link>
-          <span className="hidden text-xs text-[#7c6a55] md:inline">{user?.name || "Guest"}</span>
-          <AuthControls compact />
-        </nav>
-      </div>
-    </header>
+    <>
+      <a className="skip-nav" href="#main-content">Skip to content</a>
+      <header className="store-header" role="banner">
+        <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
+          <BrandMark />
+
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+
+            <button
+              className="mobile-nav-toggle"
+              onClick={() => setMobileOpen(true)}
+              type="button"
+              aria-label="Open navigation menu"
+            >
+              ☰
+            </button>
+          </div>
+
+          <nav
+            className={`store-nav flex flex-wrap items-center gap-2 text-sm font-bold ${mobileOpen ? "open" : ""}`}
+            role="navigation"
+            aria-label="Main navigation"
+          >
+            <button
+              className="mobile-nav-close"
+              onClick={() => setMobileOpen(false)}
+              type="button"
+              aria-label="Close navigation menu"
+            >
+              ✕
+            </button>
+
+            <Link className="store-nav-link" href="/" onClick={() => setMobileOpen(false)}>Shop</Link>
+            <Link className="ai-nav-link rounded px-3 py-2" href="/ai" onClick={() => setMobileOpen(false)}>✨ AI Hub</Link>
+            <Link className="store-nav-link" href="/wishlist" onClick={() => setMobileOpen(false)}>Wishlist</Link>
+            <Link className="store-nav-link" href="/orders" onClick={() => setMobileOpen(false)}>Orders</Link>
+            <Link className="store-nav-link" href="/profile" onClick={() => setMobileOpen(false)}>Profile</Link>
+            <Link className="store-cart-btn" href="/cart" onClick={() => setMobileOpen(false)}>
+              Cart {cartCount ? `(${cartCount})` : ""}
+            </Link>
+            <span className="hidden text-xs md:inline" style={{ color: "var(--text-muted)" }}>{user?.name || "Guest"}</span>
+            <AuthControls compact />
+          </nav>
+        </div>
+      </header>
+    </>
   );
 }
 
 export function StatusPill({ children, tone = "green" }) {
   const styles = {
-    green: "bg-[#dff1e9] text-[#145347]",
-    gold: "bg-[#f7e3bd] text-[#6d4618]",
-    rose: "bg-[#f7d7d4] text-[#7b2620]",
-    ink: "bg-[#eee7dc] text-[#3a322a]",
+    green: { background: "var(--badge-green-bg)", color: "var(--badge-green-text)" },
+    gold: { background: "var(--badge-gold-bg)", color: "var(--badge-gold-text)" },
+    rose: { background: "var(--badge-rose-bg)", color: "var(--badge-rose-text)" },
+    ink: { background: "var(--surface-secondary)", color: "var(--text-secondary)" },
   };
 
-  return <span className={`rounded-full px-3 py-1 text-xs font-black ${styles[tone]}`}>{children}</span>;
+  return (
+    <span
+      className="rounded-full px-3 py-1 text-xs font-black"
+      style={styles[tone] || styles.green}
+    >
+      {children}
+    </span>
+  );
 }
 
 export function deliveryEstimate(stock = 0) {

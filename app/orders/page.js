@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { money } from "@/lib/format";
 import { StoreHeader, StatusPill } from "@/components/StoreShell";
+import EmptyState from "@/components/EmptyState";
 
 const payableStatuses = new Set(["pending", "payment_pending", "payment_failed"]);
 
@@ -270,7 +271,7 @@ export default function OrdersPage() {
                 )}
               </article>
             ))}
-            {!orders.length ? <p className="rounded bg-[#fffaf1] p-5 text-[#7c6a55]">No orders yet.</p> : null}
+            {!orders.length ? <EmptyState icon="📦" title="No orders yet" description="Start shopping to create your first order. Track all your purchases here." actionLabel="Start shopping" actionHref="/" /> : null}
           </div>
         </div>
       </section>

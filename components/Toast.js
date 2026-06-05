@@ -1,50 +1,81 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 export function useToast() {
-  const [toast, setToast] = useState(null);
+  const [toasts, setToasts] = useState([]);
+  const timersRef = useRef({});
 
   const showToast = useCallback((message, type = "info", duration = 3000) => {
-    setToast({ message, type, id: Date.now() });
+    const id = Date.now() + Math.random();
+    setToasts((prev) => [...prev, { message, type, id, exiting: false }]);
     if (duration > 0) {
-      setTimeout(() => setToast(null), duration);
+      timersRef.current[id] = setTimeout(() => {
+        setToasts((prev) =>
+          prev.map((t) => (t.id === id ? { ...t, exiting: true } : t))
+        );
+        setTimeout(() => {
+          setToasts((prev) => prev.filter((t) => t.id !== id));
+          delete timersRef.current[id];
+        }, 320);
+      }, duration);
     }
+    return id;
   }, []);
 
-  return { toast, showToast };
+  const dismissToast = useCallback((id) => {
+    clearTimeout(timersRef.current[id]);
+    setToasts((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, exiting: true } : t))
+    );
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+      delete timersRef.current[id];
+    }, 320);
+  }, []);
+
+  return { toasts, showToast, dismissToast };
 }
 
-export function ToastContainer({ toast }) {
-  if (!toast) return null;
+const TOAST_CONFIG = {
+  success: { icon: "✓", accentVar: "--badge-green-text", bgVar: "--badge-green-bg" },
+  error:   { icon: "✕", accentVar: "--badge-rose-text", bgVar: "--badge-rose-bg" },
+  info:    { icon: "ℹ", accentVar: "--text-accent", bgVar: "--tab-active-bg" },
+  warn:    { icon: "⚠", accentVar: "--badge-gold-text", bgVar: "--badge-gold-bg" },
+};
 
-  const bgColor = {
-    success: "bg-green-50 border-l-4 border-green-500",
-    error: "bg-red-50 border-l-4 border-red-500",
-    info: "bg-blue-50 border-l-4 border-blue-500",
-    warn: "bg-yellow-50 border-l-4 border-yellow-500",
-  }[toast.type] || "bg-blue-50 border-l-4 border-blue-500";
+export function ToastContainer({ toasts = [], toast, onDismiss }) {
+  /* Support both old single-toast API and new multi-toast API */
+  const items = toasts.length > 0 ? toasts : toast ? [{ ...toast, id: toast.id || 1 }] : [];
 
-  const textColor = {
-    success: "text-green-800",
-    error: "text-red-800",
-    info: "text-blue-800",
-    warn: "text-yellow-800",
-  }[toast.type] || "text-blue-800";
-
-  const icon = {
-    success: "✓",
-    error: "✕",
-    info: "ℹ",
-    warn: "⚠",
-  }[toast.type] || "ℹ";
+  if (!items.length) return null;
 
   return (
-    <div className={`fixed bottom-4 right-4 ${bgColor} p-4 rounded shadow-lg max-w-sm`}>
-      <div className={`flex items-start gap-3 ${textColor}`}>
-        <span className="font-bold text-lg">{icon}</span>
-        <p className="font-medium">{toast.message}</p>
-      </div>
+    <div className="toast-container" role="status" aria-live="polite">
+      {items.map((t) => {
+        const config = TOAST_CONFIG[t.type] || TOAST_CONFIG.info;
+        return (
+          <div
+            key={t.id}
+            className={`toast-item ${t.exiting ? "toast-exit" : "toast-enter"}`}
+            style={{
+              "--toast-accent": `var(${config.accentVar})`,
+              "--toast-bg": `var(${config.bgVar})`,
+            }}
+          >
+            <span className="toast-icon">{config.icon}</span>
+            <p className="toast-message">{t.message}</p>
+            <button
+              className="toast-close focus-ring"
+              onClick={() => onDismiss?.(t.id)}
+              aria-label="Dismiss notification"
+              type="button"
+            >
+              ×
+            </button>
+          </div>
+        );
+      })}
     </div>
   );
 }
