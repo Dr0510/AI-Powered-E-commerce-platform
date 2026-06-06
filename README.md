@@ -93,8 +93,12 @@ RAZORPAY_KEY_SECRET=
 RAZORPAY_WEBHOOK_SECRET=
 
 RESEND_API_KEY=
-RESEND_FROM_EMAIL=onboarding@resend.dev
+RESEND_FROM_EMAIL=
 ```
+
+> Note: `RESEND_FROM_EMAIL` must be a verified sender address on a domain registered in your Resend account. Verify your domain at `resend.com/domains` and use an email address from that domain.
+>
+> If you are using the default Resend onboarding sender (`onboarding@resend.dev`), set `RESEND_TEST_EMAIL` to your own email and only send receipts to that address while testing.
 
 Receipt emails are sent automatically after a Razorpay payment is marked paid. Customers can also resend a receipt from the Orders page.
 

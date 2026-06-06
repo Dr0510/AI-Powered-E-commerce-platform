@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { money } from "@/lib/format";
 import { StoreHeader, StatusPill } from "@/components/StoreShell";
 import EmptyState from "@/components/EmptyState";
+import { OrdersSkeleton } from "@/components/SkeletonLoaders";
 
 const payableStatuses = new Set(["pending", "payment_pending", "payment_failed"]);
 
@@ -47,6 +48,7 @@ export default function OrdersPage() {
   const [downloading, setDownloading] = useState(null);
   const [emailing, setEmailing] = useState(null);
   const [paying, setPaying] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   async function loadOrders() {
     const nextOrders = await fetchOrders();
@@ -57,23 +59,28 @@ export default function OrdersPage() {
   useEffect(() => {
     let active = true;
 
-    fetchOrders()
-      .then((nextOrders) => {
-        if (!active) {
-          return;
+    async function load() {
+      try {
+        const nextOrders = await fetchOrders();
+        if (active) {
+          setOrders(nextOrders);
+          setStatus(nextOrders.length ? "Track every DR MART order here." : "No orders yet.");
+          setIsLoading(false);
         }
-
-        setOrders(nextOrders);
-        setStatus(nextOrders.length ? "Track every DR MART order here." : "No orders yet.");
-      })
-      .catch((error) => {
+      } catch (error) {
         if (active) {
           setStatus(error.message);
+          setIsLoading(false);
         }
-      });
+      }
+    }
+
+    load();
+    const interval = setInterval(load, 10000);
 
     return () => {
       active = false;
+      clearInterval(interval);
     };
   }, []);
 
@@ -199,80 +206,84 @@ export default function OrdersPage() {
   };
 
   return (
-    <main className="luxury-shell min-h-screen text-[#171412]">
+    <main className="luxury-shell min-h-screen text-[var(--text-primary)]">
       <StoreHeader />
       <section className="mx-auto max-w-7xl px-4 py-6">
         <div className="glass-panel rounded p-5">
           <StatusPill tone="gold">Order history</StatusPill>
           <h1 className="mt-3 text-3xl font-black">Orders & Tracking</h1>
-          <p className="mt-2 text-[#7c6a55]">{status}</p>
-          <div className="mt-5 space-y-4">
-            {orders.map((order) => (
-              <article className="rounded border border-[#e3d7c7] bg-[#fffaf1] p-4" key={order._id}>
-                <div className="flex flex-wrap items-center justify-between gap-3">
-                  <div>
-                    <h2 className="font-black">Order #{order._id.slice(-8)}</h2>
-                    <p className="text-sm font-black uppercase text-[#1d6b62]">{order.status}</p>
-                  </div>
-                  <p className="text-xl font-black">{money(order.total)}</p>
-                </div>
-                <div className="mt-4 grid gap-2 md:grid-cols-4">
-                  {["pending", "paid", "packed", "shipped", "delivered"].map((step) => (
-                    <div className={`rounded p-3 text-sm font-bold ${step === order.status ? "bg-[#123f3a] text-white" : "bg-[#f4efe7] text-[#7c6a55]"}`} key={step}>
-                      {step}
+          <p className="mt-2 text-[var(--text-muted)]">{status}</p>
+          {isLoading ? (
+            <OrdersSkeleton />
+          ) : (
+            <div className="mt-5 space-y-4">
+              {orders.map((order) => (
+                <article className="rounded border border-[var(--border-primary)] bg-[var(--surface-primary)] p-4" key={order._id}>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div>
+                      <h2 className="font-black">Order #{order._id.slice(-8)}</h2>
+                      <p className="text-sm font-black uppercase text-[var(--text-accent)]">{order.fulfillmentStatus || order.status}</p>
                     </div>
-                  ))}
-                </div>
-
-                {payableStatuses.has(order.status) && (
-                  <div className="mt-4 rounded border border-[#c38b46] bg-[#f7e3bd] p-3">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <p className="text-sm font-black text-[#6d4618]">Payment pending</p>
-                        <p className="text-sm text-[#6d4618]">Complete payment to confirm this order.</p>
+                    <p className="text-xl font-black">{money(order.total)}</p>
+                  </div>
+                  <div className="mt-4 grid gap-2 md:grid-cols-4">
+                    {["unfulfilled", "packed", "shipped", "delivered"].map((step) => (
+                      <div className={`rounded p-3 text-sm font-bold ${step === order.fulfillmentStatus ? "bg-[#123f3a] text-white" : "bg-[var(--surface-secondary)] text-[var(--text-muted)]"}`} key={step}>
+                        {step}
                       </div>
+                    ))}
+                  </div>
+
+                  {payableStatuses.has(order.status) && (
+                    <div className="mt-4 rounded border border-[var(--border-primary)] bg-[var(--badge-gold-bg)] p-3">
+                      <div className="flex flex-wrap items-center justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-black text-[var(--badge-gold-text)]">Payment pending</p>
+                          <p className="text-sm text-[var(--badge-gold-text)]">Complete payment to confirm this order.</p>
+                        </div>
+                        <button
+                          onClick={() => handleRepayment(order)}
+                          disabled={paying === order._id}
+                          className="rounded bg-[#123f3a] px-4 py-2 text-sm font-black text-white transition hover:bg-[#1d6b62] disabled:cursor-not-allowed disabled:opacity-50"
+                          type="button"
+                        >
+                          {paying === order._id ? "Opening payment..." : "Pay Now"}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Receipt & PDF Actions for Paid Orders */}
+                  {(order.status === "paid" || order.fulfillmentStatus === "packed" || order.fulfillmentStatus === "shipped" || order.fulfillmentStatus === "delivered") && (
+                    <div className="mt-4 flex gap-2 flex-wrap">
                       <button
-                        onClick={() => handleRepayment(order)}
-                        disabled={paying === order._id}
-                        className="rounded bg-[#123f3a] px-4 py-2 text-sm font-black text-white transition hover:bg-[#1d6b62] disabled:cursor-not-allowed disabled:opacity-50"
+                        onClick={() => handleViewReceipt(order._id)}
+                        className="rounded bg-[#123f3a] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#1d6b62]"
+                      >
+                        View Receipt
+                      </button>
+                      <button
+                        onClick={(e) => handleDownloadPDF(order._id, e)}
+                        disabled={downloading === order._id}
+                        className="rounded border border-[var(--border-primary)] px-4 py-2 text-sm font-bold text-[var(--text-primary)] hover:bg-[var(--surface-secondary)] transition disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {downloading === order._id ? "Downloading..." : "Download HTML"}
+                      </button>
+                      <button
+                        onClick={() => handleEmailReceipt(order._id)}
+                        disabled={emailing === order._id}
+                        className="rounded border border-[var(--border-primary)] px-4 py-2 text-sm font-bold text-[var(--text-primary)] hover:bg-[var(--surface-secondary)] transition disabled:cursor-not-allowed disabled:opacity-50"
                         type="button"
                       >
-                        {paying === order._id ? "Opening payment..." : "Pay Now"}
+                        {emailing === order._id ? "Emailing..." : "Email Receipt"}
                       </button>
                     </div>
-                  </div>
-                )}
-
-                {/* Receipt & PDF Actions for Paid Orders */}
-                {(order.status === "paid" || order.status === "packed" || order.status === "shipped" || order.status === "delivered") && (
-                  <div className="mt-4 flex gap-2 flex-wrap">
-                    <button
-                      onClick={() => handleViewReceipt(order._id)}
-                      className="rounded bg-[#123f3a] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#1d6b62]"
-                    >
-                      View Receipt
-                    </button>
-                    <button
-                      onClick={(e) => handleDownloadPDF(order._id, e)}
-                      disabled={downloading === order._id}
-                      className="rounded border border-[#123f3a] px-4 py-2 text-sm font-bold text-[#123f3a] transition disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      {downloading === order._id ? "Downloading..." : "Download HTML"}
-                    </button>
-                    <button
-                      onClick={() => handleEmailReceipt(order._id)}
-                      disabled={emailing === order._id}
-                      className="rounded border border-[#c38b46] px-4 py-2 text-sm font-bold text-[#6d4618] transition hover:bg-[#f7e3bd] disabled:cursor-not-allowed disabled:opacity-50"
-                      type="button"
-                    >
-                      {emailing === order._id ? "Emailing..." : "Email Receipt"}
-                    </button>
-                  </div>
-                )}
-              </article>
-            ))}
-            {!orders.length ? <EmptyState icon="📦" title="No orders yet" description="Start shopping to create your first order. Track all your purchases here." actionLabel="Start shopping" actionHref="/" /> : null}
-          </div>
+                  )}
+                </article>
+              ))}
+              {!orders.length ? <EmptyState icon="📦" title="No orders yet" description="Start shopping to create your first order. Track all your purchases here." actionLabel="Start shopping" actionHref="/" /> : null}
+            </div>
+          )}
         </div>
       </section>
     </main>

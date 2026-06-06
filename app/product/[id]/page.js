@@ -210,7 +210,7 @@ export default function ProductPage({ params }) {
   const outOfStock = product.stock <= 0;
 
   return (
-    <main className="luxury-shell min-h-screen text-[#171412]">
+    <main className="luxury-shell min-h-screen text-[var(--text-primary)]">
       <StoreHeader cartCount={cartCount} />
 
       {isLoading ? (
@@ -218,14 +218,15 @@ export default function ProductPage({ params }) {
           <ProductDetailSkeleton />
         </section>
       ) : (
-      <section className="mx-auto grid max-w-7xl gap-5 px-4 py-6 lg:grid-cols-[460px_1fr_320px]">
+        <>
+        <section className="mx-auto grid max-w-7xl gap-5 px-4 py-6 lg:grid-cols-[460px_1fr_320px]">
         <div className="glass-panel rounded p-4">
-          <div className="aspect-square rounded bg-[#f4efe7] p-5">
+          <div className="aspect-square rounded bg-[var(--surface-secondary)] p-5">
             <img alt={product.title} className="h-full w-full object-contain" src={selectedImage || product.image} />
           </div>
           <div className="mt-3 grid grid-cols-5 gap-2">
             {gallery.map((image, index) => (
-              <button className={`aspect-square rounded border bg-[#fffaf1] p-1 ${selectedImage === image.url ? "border-[#123f3a]" : "border-[#e3d7c7]"}`} key={`${image.url}-${index}`} onClick={() => setSelectedImage(image.url)} type="button">
+              <button className={`aspect-square rounded border bg-[var(--surface-primary)] p-1 ${selectedImage === image.url ? "border-[#123f3a]" : "border-[var(--border-primary)]"}`} key={`${image.url}-${index}`} onClick={() => setSelectedImage(image.url)} type="button">
                 <img alt={image.alt || product.title} className="h-full w-full object-contain" src={image.url} />
               </button>
             ))}
@@ -234,8 +235,8 @@ export default function ProductPage({ params }) {
 
         <section className="glass-panel rounded p-5">
           <nav className="mb-5 flex flex-wrap gap-2 text-sm font-black">
-            <a className="rounded border border-[#d8cbbb] bg-[#fffaf1] px-3 py-2 text-[#123f3a] hover:bg-[#f4efe7]" href="#product-information">Product Information</a>
-            <a className="rounded border border-[#d8cbbb] bg-[#fffaf1] px-3 py-2 text-[#123f3a] hover:bg-[#f4efe7]" href="#customer-reviews">Customer Reviews</a>
+            <a className="rounded border border-[var(--border-primary)] bg-[var(--surface-primary)] px-3 py-2 text-[var(--text-primary)] hover:bg-[var(--surface-secondary)]" href="#product-information">Product Information</a>
+            <a className="rounded border border-[var(--border-primary)] bg-[var(--surface-primary)] px-3 py-2 text-[var(--text-primary)] hover:bg-[var(--surface-secondary)]" href="#customer-reviews">Customer Reviews</a>
           </nav>
           <div className="flex flex-wrap items-center gap-2">
             <StatusPill>{product.category}</StatusPill>
@@ -245,26 +246,26 @@ export default function ProductPage({ params }) {
           <div className="mt-4 flex flex-wrap items-center gap-3">
             <span className="rounded bg-[#123f3a] px-3 py-1 text-sm font-black text-white">{reviewAverage.toFixed(1)} / 5</span>
             <Stars value={reviewAverage} />
-            <span className="text-sm font-bold text-[#7c6a55]">{reviews.length} reviews</span>
-            <span className="text-sm font-bold text-[#7c6a55]">{questions.length} questions</span>
+            <span className="text-sm font-bold text-[var(--text-muted)]">{reviews.length} reviews</span>
+            <span className="text-sm font-bold text-[var(--text-muted)]">{questions.length} questions</span>
           </div>
           <div className="mt-6 flex flex-wrap items-end gap-3">
             <span className="text-4xl font-black">{money(product.price)}</span>
-            <span className="text-lg text-[#9b8b78] line-through">{money(mrp)}</span>
-            <span className="font-black text-[#1d6b62]">{discount}% off</span>
+            <span className="text-lg text-[var(--text-muted)] line-through">{money(mrp)}</span>
+            <span className="font-black text-[var(--text-accent)]">{discount}% off</span>
           </div>
-          <p className="mt-5 max-w-3xl leading-7 text-[#4e4439]">{product.description}</p>
+          <p className="mt-5 max-w-3xl leading-7 text-[var(--text-secondary)]">{product.description}</p>
 
           <div className="mt-6 grid gap-3 md:grid-cols-2">
-            <div className="rounded border border-[#d8cbbb] bg-[#fffaf1] p-4">
-              <p className="text-xs font-black uppercase text-[#7c6a55]">Seller profile</p>
+            <div className="rounded border border-[var(--border-primary)] bg-[var(--surface-primary)] p-4">
+              <p className="text-xs font-black uppercase text-[var(--text-muted)]">Seller profile</p>
               <h2 className="mt-1 text-xl font-black">DR MART Verified Studio</h2>
-              <p className="mt-2 text-sm leading-6 text-[#5d5144]">Ships authenticated inventory with quality checks, careful packaging, and responsive support.</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">Ships authenticated inventory with quality checks, careful packaging, and responsive support.</p>
             </div>
-            <div className="rounded border border-[#d8cbbb] bg-[#fffaf1] p-4">
-              <p className="text-xs font-black uppercase text-[#7c6a55]">Delivery estimate</p>
+            <div className="rounded border border-[var(--border-primary)] bg-[var(--surface-primary)] p-4">
+              <p className="text-xs font-black uppercase text-[var(--text-muted)]">Delivery estimate</p>
               <h2 className="mt-1 text-xl font-black">{deliveryEstimate(product.stock)}</h2>
-              <p className="mt-2 text-sm leading-6 text-[#5d5144]">Stock status: {product.stock > 0 ? `${product.stock} units ready` : "unavailable"}.</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--text-secondary)]">Stock status: {product.stock > 0 ? `${product.stock} units ready` : "unavailable"}.</p>
             </div>
           </div>
 
@@ -272,8 +273,8 @@ export default function ProductPage({ params }) {
             <h2 className="text-xl font-black">Specifications</h2>
             <div className="mt-3 grid gap-2 sm:grid-cols-2">
               {specs.map(([label, value]) => (
-                <div className="rounded bg-[#f4efe7] p-3" key={label}>
-                  <p className="text-xs font-bold uppercase text-[#7c6a55]">{label}</p>
+                <div className="rounded bg-[var(--surface-secondary)] p-3" key={label}>
+                  <p className="text-xs font-bold uppercase text-[var(--text-muted)]">{label}</p>
                   <p className="font-black">{value}</p>
                 </div>
               ))}
@@ -283,7 +284,7 @@ export default function ProductPage({ params }) {
 
         <aside className="glass-panel rounded p-5">
           <p className="text-3xl font-black">{money(product.price)}</p>
-          <p className="mt-2 text-sm font-bold text-[#1d6b62]">{deliveryEstimate(product.stock)}</p>
+          <p className="mt-2 text-sm font-bold text-[var(--text-accent)]">{deliveryEstimate(product.stock)}</p>
           {outOfStock ? <p className="mt-4 rounded bg-red-50 p-3 text-sm font-black text-red-700">Out of Stock</p> : null}
           <button className="mt-5 w-full rounded bg-[#123f3a] px-4 py-3 font-black text-white hover:bg-[#1d6b62] disabled:cursor-not-allowed disabled:bg-slate-300" disabled={outOfStock} onClick={() => addToCart(false)} type="button">Add to Cart</button>
           <button
@@ -310,7 +311,7 @@ export default function ProductPage({ params }) {
             </span>
           </button>
           <button
-            className={`mt-3 w-full rounded border px-4 py-3 font-black transition ${saved ? "border-[#1d6b62] bg-[#dff1e9] text-[#145347]" : "border-[#c38b46] text-[#6d4618] hover:bg-[#f7e3bd]"} ${savingWishlist ? "scale-[0.98]" : ""}`}
+            className={`mt-3 w-full rounded border px-4 py-3 font-black transition ${saved ? "border-[var(--border-primary)] bg-[var(--badge-green-bg)] text-[var(--badge-green-text)]" : "border-[var(--border-primary)] text-[var(--text-primary)] hover:bg-[var(--surface-secondary)]"} ${savingWishlist ? "scale-[0.98]" : ""}`}
             disabled={savingWishlist}
             onClick={addToWishlist}
             type="button"
@@ -321,11 +322,11 @@ export default function ProductPage({ params }) {
             </span>
           </button>
           {saveFlash ? (
-            <p className="mt-3 rounded bg-[#dff1e9] px-3 py-2 text-sm font-black text-[#145347]">
+            <p className="mt-3 rounded bg-[var(--badge-green-bg)] px-3 py-2 text-sm font-black text-[var(--badge-green-text)]">
               Saved successfully. Find it anytime in your wishlist.
             </p>
           ) : null}
-          <p className="mt-4 rounded bg-[#f4efe7] p-3 text-sm font-bold text-[#5d5144]">{status}</p>
+          <p className="mt-4 rounded bg-[var(--surface-secondary)] p-3 text-sm font-bold text-[var(--text-secondary)]">{status}</p>
         </aside>
       </section>
 
@@ -335,10 +336,14 @@ export default function ProductPage({ params }) {
             <h2 className="text-2xl font-black">Related & recommended products</h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
               {related.map((item) => (
-                <Link className="rounded border border-[#e3d7c7] bg-[#fffaf1] p-3 hover:-translate-y-1 hover:shadow-lg" href={`/product/${item._id}`} key={item._id}>
-                  <img alt={item.title} className="h-28 w-full object-contain" src={item.image} />
-                  <p className="mt-2 line-clamp-2 text-sm font-black">{item.title}</p>
-                  <p className="text-sm font-black text-[#1d6b62]">{moneyFromPaise(priceInPaise(item))}</p>
+                <Link className="rounded border border-[var(--border-primary)] bg-[var(--surface-primary)] p-3 hover:-translate-y-1 hover:shadow-lg flex flex-col justify-between" href={`/product/${item._id}`} key={item._id}>
+                  <div className="h-28 w-full overflow-hidden rounded bg-[var(--surface-secondary)] p-2 flex items-center justify-center mb-2">
+                    <img alt={item.title} className="h-full w-full object-contain" src={item.image} />
+                  </div>
+                  <div>
+                    <p className="line-clamp-2 text-sm font-black">{item.title}</p>
+                    <p className="text-sm font-black text-[var(--text-accent)] mt-1">{moneyFromPaise(priceInPaise(item))}</p>
+                  </div>
                 </Link>
               ))}
             </div>
@@ -347,14 +352,14 @@ export default function ProductPage({ params }) {
           <section className="glass-panel rounded p-5">
             <h2 className="text-2xl font-black">Customer Q&A</h2>
             <form className="mt-4 flex gap-2" onSubmit={submitQuestion}>
-              <input className="min-w-0 flex-1 rounded border border-[#d8cbbb] px-3 py-2" onChange={(event) => setQuestion(event.target.value)} placeholder="Ask about fit, warranty, delivery..." value={question} />
+              <input className="min-w-0 flex-1 rounded border border-[var(--border-secondary)] px-3 py-2" onChange={(event) => setQuestion(event.target.value)} placeholder="Ask about fit, warranty, delivery..." value={question} />
               <button className="rounded bg-[#123f3a] px-4 py-2 font-black text-white" type="submit">Ask</button>
             </form>
             <div className="mt-4 space-y-3">
               {[{ id: "default", text: "Is this product eligible for replacement?", answer: "Yes, verified seller replacement support is available for eligible orders." }, ...questions].map((item) => (
-                <div className="rounded bg-[#fffaf1] p-3" key={item.id}>
+                <div className="rounded bg-[var(--surface-primary)] border border-[var(--border-primary)] p-3" key={item.id}>
                   <p className="font-black">Q: {item.text}</p>
-                  <p className="mt-1 text-sm text-[#5d5144]">A: {item.answer}</p>
+                  <p className="mt-1 text-sm text-[var(--text-secondary)]">A: {item.answer}</p>
                 </div>
               ))}
             </div>
@@ -362,18 +367,18 @@ export default function ProductPage({ params }) {
         </div>
 
         <section className="glass-panel scroll-mt-24 rounded p-5" id="customer-reviews">
-          <div className="rounded bg-[#fffaf1] p-4">
-            <p className="text-xs font-black uppercase text-[#7c6a55]">Customer rating</p>
+          <div className="rounded bg-[var(--surface-primary)] border border-[var(--border-primary)] p-4">
+            <p className="text-xs font-black uppercase text-[var(--text-muted)]">Customer rating</p>
             <div className="mt-2 flex items-end gap-3">
               <span className="text-4xl font-black">{reviewAverage.toFixed(1)}</span>
               <div>
                 <Stars value={reviewAverage} size="text-2xl" />
-                <p className="text-sm font-bold text-[#7c6a55]">{reviews.length} verified reviews</p>
+                <p className="text-sm font-bold text-[var(--text-muted)]">{reviews.length} verified reviews</p>
               </div>
             </div>
           </div>
-          <form className="mt-4 space-y-3 rounded border border-[#e3d7c7] bg-white/70 p-4" onSubmit={submitReview}>
-            <p className="text-sm font-black text-[#5d5144]">Rate this delivered product</p>
+          <form className="mt-4 space-y-3 rounded border border-[var(--border-primary)] bg-[var(--surface-primary)] p-4" onSubmit={submitReview}>
+            <p className="text-sm font-black text-[var(--text-secondary)]">Rate this delivered product</p>
             <div className="flex gap-1">
               {[1, 2, 3, 4, 5].map((value) => (
                 <button
@@ -387,22 +392,23 @@ export default function ProductPage({ params }) {
                 </button>
               ))}
             </div>
-            <textarea className="min-h-24 w-full rounded border border-[#d8cbbb] p-2 disabled:bg-slate-100" disabled={!canReview} onChange={(event) => setReview({ ...review, comment: event.target.value })} placeholder={canReview ? "Write a review" : "Reviews open after your paid order is delivered."} value={review.comment} />
+            <textarea className="min-h-24 w-full rounded border border-[var(--border-secondary)] p-2 disabled:bg-slate-100" disabled={!canReview} onChange={(event) => setReview({ ...review, comment: event.target.value })} placeholder={canReview ? "Write a review" : "Reviews open after your paid order is delivered."} value={review.comment} />
             <button className="rounded bg-[#123f3a] px-4 py-2 font-black text-white disabled:cursor-not-allowed disabled:bg-slate-300" disabled={!canReview} type="submit">Submit Review</button>
           </form>
           <div className="mt-5 space-y-3">
             {reviews.length ? reviews.map((item) => (
-              <div className="rounded border border-[#e3d7c7] bg-[#fffaf1] p-4" key={item._id}>
+              <div className="rounded border border-[var(--border-primary)] bg-[var(--surface-primary)] p-4" key={item._id}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-black">{item.userName}</p>
                   <Stars value={item.rating} />
                 </div>
-                <p className="mt-1 text-sm text-[#5d5144]">{item.comment}</p>
+                <p className="mt-1 text-sm text-[var(--text-secondary)]">{item.comment}</p>
               </div>
-            )) : <p className="rounded bg-[#fffaf1] p-3 text-sm text-[#7c6a55]">No reviews yet.</p>}
+            )) : <p className="rounded bg-[var(--surface-primary)] border border-[var(--border-primary)] p-3 text-sm text-[var(--text-muted)]">No reviews yet.</p>}
           </div>
         </section>
       </section>
+        </>
       )}
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </main>

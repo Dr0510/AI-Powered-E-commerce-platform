@@ -32,13 +32,17 @@ export default function ProfilePage() {
       if (active) setIsLoading(false);
     }
     load().catch((error) => active && setStatus(error.message));
+    const interval = setInterval(() => {
+      load().catch((error) => active && console.error(error));
+    }, 10000);
     return () => {
       active = false;
+      clearInterval(interval);
     };
   }, []);
 
   return (
-    <main className="luxury-shell min-h-screen text-[#171412]">
+    <main className="luxury-shell min-h-screen text-[var(--text-primary)]">
       <StoreHeader user={user} />
       <section className="mx-auto max-w-7xl px-4 py-6">
         <div className="brand-gradient rounded p-6 text-white md:p-8">
@@ -67,13 +71,13 @@ export default function ProfilePage() {
               <h2 className="text-2xl font-black">Recent orders</h2>
               <div className="mt-4 grid gap-3 md:grid-cols-2">
                 {orders.slice(0, 4).map((order) => (
-                  <Link className="rounded border border-[#e3d7c7] bg-[#fffaf1] p-4" href="/orders" key={order._id}>
+                  <Link className="rounded border border-[var(--border-primary)] bg-[var(--surface-primary)] p-4" href="/orders" key={order._id}>
                     <p className="font-black">Order #{order._id.slice(-8)}</p>
-                    <p className="mt-1 text-sm font-bold uppercase text-[#1d6b62]">{order.status}</p>
+                    <p className="mt-1 text-sm font-bold uppercase text-[var(--text-accent)]">{order.fulfillmentStatus || order.status}</p>
                     <p className="mt-2 text-xl font-black">{money(order.total)}</p>
                   </Link>
                 ))}
-                {!orders.length ? <p className="rounded bg-[#fffaf1] p-4 text-[#7c6a55]">No orders yet.</p> : null}
+                {!orders.length ? <p className="rounded bg-[var(--surface-primary)] border border-[var(--border-primary)] p-4 text-[var(--text-muted)]">No orders yet.</p> : null}
               </div>
             </section>
 
@@ -81,12 +85,14 @@ export default function ProfilePage() {
               <h2 className="text-2xl font-black">Recently viewed</h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {recent.map((item) => (
-                  <Link className="rounded border border-[#e3d7c7] bg-[#fffaf1] p-3" href={`/product/${item.productId}`} key={item.productId}>
-                    <img alt={item.title} className="h-28 w-full object-contain" src={item.image} />
+                  <Link className="rounded border border-[var(--border-primary)] bg-[var(--surface-primary)] p-3 hover:-translate-y-1 flex flex-col justify-between" href={`/product/${item.productId}`} key={item.productId}>
+                    <div className="h-28 w-full overflow-hidden rounded bg-[var(--surface-secondary)] p-2 flex items-center justify-center">
+                      <img alt={item.title} className="h-full w-full object-contain" src={item.image} />
+                    </div>
                     <p className="mt-2 line-clamp-2 text-sm font-black">{item.title}</p>
                   </Link>
                 ))}
-                {!recent.length ? <p className="rounded bg-[#fffaf1] p-4 text-[#7c6a55]">Product views will appear here.</p> : null}
+                {!recent.length ? <p className="rounded bg-[var(--surface-primary)] border border-[var(--border-primary)] p-4 text-[var(--text-muted)]">Product views will appear here.</p> : null}
               </div>
             </section>
           </div>

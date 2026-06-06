@@ -149,7 +149,7 @@ function ReceiptContent() {
               </div>
               <div>
                 <p style={{ color: '#666', margin: '5px 0' }}>Order Date:</p>
-                <p style={{ fontWeight: 'bold', margin: '5px 0' }}>
+                <p style={{ fontWeight: 'bold', margin: '5px 0' }} suppressHydrationWarning>
                   {new Date(order.createdAt).toLocaleDateString('en-IN', {
                     year: 'numeric',
                     month: 'long',
@@ -250,7 +250,7 @@ function ReceiptContent() {
           <div style={{ textAlign: 'center', borderTop: '1px solid #e0e0e0', paddingTop: '20px', color: '#666', fontSize: '12px' }}>
             <p>If you have any questions about your order, please contact us at support@example.com</p>
             <p style={{ fontWeight: 'bold' }}>Thank you for shopping with us!</p>
-            <p style={{ color: '#999', fontSize: '11px' }}>
+            <p style={{ color: '#999', fontSize: '11px' }} suppressHydrationWarning>
               Generated on {new Date(order.createdAt).toLocaleDateString('en-IN')} 
             </p>
           </div>

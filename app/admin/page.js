@@ -696,7 +696,7 @@ export default function AdminPage() {
                       </td>
                       <td className="py-3 pr-3 font-bold">{user.orderCount}</td>
                       <td className="py-3 pr-3 font-bold">{money((user.totalSpentInPaise || 0) / 100)}</td>
-                      <td className="py-3 pr-3 text-slate-500">{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Unknown"}</td>
+                      <td className="py-3 pr-3 text-slate-500" suppressHydrationWarning>{user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "Unknown"}</td>
                     </tr>
                   ))}
                 </tbody>

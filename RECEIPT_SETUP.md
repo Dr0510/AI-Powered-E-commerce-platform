@@ -24,7 +24,14 @@
 After payment, customers automatically receive an email receipt. Configure in `.env`:
 ```env
 RESEND_API_KEY=your_api_key
-RESEND_FROM_EMAIL=onboarding@resend.dev
+RESEND_FROM_EMAIL=you@your-verified-domain.com
+```
+
+> Note: The sender address must be on a domain verified in Resend. Verify your domain at `resend.com/domains` before sending emails to other recipients.
+
+For quick local testing with the default Resend onboarding sender, also set:
+```env
+RESEND_TEST_EMAIL=your-email@example.com
 ```
 
 ### 2. View Receipt on Web

@@ -129,8 +129,9 @@ export default function Home() {
 
   useEffect(() => {
     let active = true;
-    Promise.all([api("/api/products?ai=true"), api("/api/auth/me")])
-      .then(async ([productData, userData]) => {
+    async function load() {
+      try {
+        const [productData, userData] = await Promise.all([api("/api/products?ai=true"), api("/api/auth/me")]);
         if (!active) return;
         setProducts(productData.products);
         setUser(userData.user);
@@ -140,10 +141,27 @@ export default function Home() {
           const orderData = await api("/api/orders");
           if (active) setOrders(orderData.orders);
         }
-      })
-      .catch((error) => active && setStatus(error.message));
+      } catch (error) {
+        if (active) setStatus(error.message);
+      }
+    }
+    load();
+    const interval = setInterval(async () => {
+      if (active) {
+        try {
+          const userData = await api("/api/auth/me");
+          if (userData.user && active) {
+            const orderData = await api("/api/orders");
+            if (active) setOrders(orderData.orders);
+          }
+        } catch (error) {
+          console.error("Order poll failed:", error);
+        }
+      }
+    }, 10000);
     return () => {
       active = false;
+      clearInterval(interval);
     };
   }, []);
 
@@ -222,13 +240,29 @@ export default function Home() {
     setCart((current) => current.map((item) => (item.productId === productId ? { ...item, quantity } : item)).filter((item) => item.quantity > 0));
   }
 
+  async function fetchPincodeDetails(pincode) {
+    if (!pincode || !/^[0-9]{6}$/.test(pincode.replace(/\D/g, ""))) return;
+    
+    try {
+      const response = await api(`/api/pincode?pincode=${pincode}`);
+      if (response.status === "success" && response.data) {
+        setShipping(prev => ({
+          ...prev,
+          city: response.data.city || prev.city,
+        }));
+      }
+    } catch (error) {
+      console.error("Pincode lookup failed:", error);
+    }
+  }
+
   function validateCheckout() {
     const errors = {};
     ["name", "line1", "city", "phone", "pincode"].forEach((key) => {
       if (!String(shipping[key] || "").trim()) errors[key] = "Required";
     });
-    if (shipping.phone && !/^[0-9+\-\s]{8,15}$/.test(shipping.phone)) errors.phone = "Invalid phone";
-    if (shipping.pincode && !/^[0-9]{5,6}$/.test(shipping.pincode)) errors.pincode = "Invalid pincode";
+    if (shipping.phone && !/^[0-9]{10}$/.test(shipping.phone.replace(/\D/g, ""))) errors.phone = "Mobile must be 10 digits";
+    if (shipping.pincode && !/^[0-9]{6}$/.test(shipping.pincode.replace(/\D/g, ""))) errors.pincode = "PIN must be 6 digits";
     setFormErrors(errors);
     return Object.keys(errors).length === 0;
   }
@@ -334,10 +368,10 @@ export default function Home() {
   }
 
   return (
-    <main className="luxury-shell min-h-screen text-[#171412]">
+    <main className="luxury-shell min-h-screen text-[var(--text-primary)]">
       <StoreHeader cartCount={cartCount} user={user} />
 
-      <section className="mx-auto max-w-7xl px-4 py-6">
+      <section className="mx-auto max-w-[1600px] px-6 py-6">
         <div className="brand-gradient animate-rise overflow-hidden rounded p-6 text-white shadow-xl md:p-10">
           <div className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-end">
             <div>
@@ -345,11 +379,11 @@ export default function Home() {
               <h1 className="mt-5 max-w-3xl text-4xl font-black tracking-normal md:text-6xl">Curated everyday luxury, delivered with quiet confidence.</h1>
               <p className="mt-4 max-w-2xl text-base leading-7 text-[#f6efe4]">DR MART by DR Group brings refined products, verified sellers, intelligent discovery, secure Razorpay checkout, and transparent order tracking into one calm shopping experience.</p>
               <form className="mt-6 grid gap-2 rounded bg-white/12 p-2 md:grid-cols-[150px_1fr_auto]" onSubmit={search}>
-                <select className="rounded border-0 bg-white px-3 py-3 text-sm font-bold text-[#171412]" onChange={(event) => setCategory(event.target.value)} value={category}>
+                <select className="rounded border border-[var(--border-secondary)] bg-[var(--input-bg)] px-3 py-3 text-sm font-bold text-[var(--text-primary)]" onChange={(event) => setCategory(event.target.value)} value={category}>
                   <option value="">All categories</option>
                   {categories.map((item) => <option key={item} value={item}>{item}</option>)}
                 </select>
-                <input className="rounded border-0 bg-white px-4 py-3 text-sm text-[#171412] outline-none" onChange={(event) => setQuery(event.target.value)} placeholder="Search handcrafted bags, phones, appliances..." value={query} />
+                <input className="rounded border border-[var(--border-secondary)] bg-[var(--input-bg)] px-4 py-3 text-sm text-[var(--text-primary)] outline-none" onChange={(event) => setQuery(event.target.value)} placeholder="Search handcrafted bags, phones, appliances..." value={query} />
                 <button className="btn-gold px-5 py-3 text-sm disabled:opacity-60" disabled={busy} onClick={ripple} type="submit">Search</button>
               </form>
             </div>
@@ -367,9 +401,9 @@ export default function Home() {
             <section className="glass-panel rounded p-4">
               <h2 className="font-black">Explore</h2>
               <div className="mt-3 grid gap-2">
-                <button className={`btn-category px-3 py-2 text-left text-sm font-bold ${!category ? "bg-[#123f3a] text-white active" : "hover:bg-[#efe4d4]"}`} onClick={(e) => { ripple(e); chooseCategory(""); }} type="button">All products</button>
+                <button className={`btn-category px-3 py-2 text-left text-sm font-bold ${!category ? "bg-[var(--brand-green)] text-white active" : "hover:bg-[var(--surface-secondary)]"}`} onClick={(e) => { ripple(e); chooseCategory(""); }} type="button">All products</button>
                 {categories.map((item) => (
-                  <button className={`btn-category px-3 py-2 text-left text-sm ${category === item ? "bg-[#123f3a] font-bold text-white active" : "hover:bg-[#efe4d4]"}`} key={item} onClick={(e) => { ripple(e); chooseCategory(item); }} type="button">{item}</button>
+                  <button className={`btn-category px-3 py-2 text-left text-sm ${category === item ? "bg-[var(--brand-green)] font-bold text-white active" : "hover:bg-[var(--surface-secondary)]"}`} key={item} onClick={(e) => { ripple(e); chooseCategory(item); }} type="button">{item}</button>
                 ))}
               </div>
             </section>
@@ -378,7 +412,7 @@ export default function Home() {
               <h2 className="font-black">Filters</h2>
               <div className="mt-3 space-y-3">
                 <label className="block text-sm font-bold">Price</label>
-                <select className="w-full rounded border border-[#d8cbbb] bg-white px-3 py-2 text-sm" onChange={(event) => setPriceBand(event.target.value)} value={priceBand}>
+                <select className="w-full rounded border border-[var(--border-secondary)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text-primary)]" onChange={(event) => setPriceBand(event.target.value)} value={priceBand}>
                   <option value="all">All prices</option>
                   <option value="under5">Under ₹5,000</option>
                   <option value="5to15">₹5,000 to ₹15,000</option>
@@ -389,7 +423,7 @@ export default function Home() {
                   In-stock only
                 </label>
                 <label className="block text-sm font-bold">Sort</label>
-                <select className="w-full rounded border border-[#d8cbbb] bg-white px-3 py-2 text-sm" onChange={(event) => setSort(event.target.value)} value={sort}>
+                <select className="w-full rounded border border-[var(--border-secondary)] bg-[var(--input-bg)] px-3 py-2 text-sm text-[var(--text-primary)]" onChange={(event) => setSort(event.target.value)} value={sort}>
                   <option value="featured">Featured savings</option>
                   <option value="rating">Highest rated</option>
                   <option value="priceAsc">Price: low to high</option>
@@ -411,15 +445,15 @@ export default function Home() {
             </section>
 
             <section className="glass-panel rounded p-4">
-              <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[#e3d7c7] pb-4">
+              <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border-primary)] pb-4">
                 <div>
-                  <h2 className="text-2xl font-black">Curated products</h2>
-                  <p className="mt-1 text-sm text-[#7c6a55]">{status}</p>
-                  {saveNotice ? <p className="mt-2 rounded bg-[#dff1e9] px-3 py-2 text-sm font-black text-[#145347]">{saveNotice}</p> : null}
+                  <h2 className="text-xl font-black">All Catalog Items</h2>
+                  <p className="mt-1 text-sm text-[var(--text-muted)]">{status}</p>
+                  {saveNotice ? <p className="mt-2 rounded bg-[var(--badge-green-bg)] px-3 py-2 text-sm font-black text-[var(--badge-green-text)]">{saveNotice}</p> : null}
                 </div>
                 <StatusPill>{visibleProducts.length} results</StatusPill>
               </div>
-              <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+              <div className="mt-5 grid gap-4 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 {isLoading ? (
                   <ProductGridSkeleton count={6} />
                 ) : visibleProducts.length > 0 ? visibleProducts.map((product, index) => {
@@ -430,24 +464,24 @@ export default function Home() {
                   const isSaved = savedProductIds.includes(product._id);
                   const isCartAdded = cartAddedId === product._id;
                   return (
-                    <article className="animate-rise group rounded border border-[#e3d7c7] bg-[#fffaf1] p-3 hover:-translate-y-1 hover:shadow-xl" key={product._id} style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }}>
+                    <article className="animate-rise group rounded border border-[var(--border-primary)] bg-[var(--surface-primary)] p-3 hover:-translate-y-1 hover:shadow-xl" key={product._id} style={{ animationDelay: `${Math.min(index, 8) * 35}ms` }}>
                       <Link href={`/product/${product._id}`}>
-                        <div className="relative aspect-square overflow-hidden rounded bg-[#f4efe7]">
+                        <div className="relative aspect-square overflow-hidden rounded bg-[var(--surface-secondary)]">
                           <StatusPill tone={product.stock > 0 ? "green" : "rose"}>{product.stock > 0 ? "In stock" : "Out of Stock"}</StatusPill>
                           {product.image ? <img alt={product.title} className="h-full w-full object-contain p-5 group-hover:scale-105" src={product.image} /> : null}
                         </div>
                       </Link>
                       <div className="mt-3 space-y-2">
-                        <p className="text-xs font-black uppercase text-[#1d6b62]">{product.category}</p>
-                        <Link href={`/product/${product._id}`}><h3 className="line-clamp-2 min-h-10 text-sm font-black leading-5 hover:text-[#1d6b62]">{product.title}</h3></Link>
+                        <p className="text-xs font-black uppercase text-[var(--text-accent)]">{product.category}</p>
+                        <Link href={`/product/${product._id}`}><h3 className="line-clamp-2 min-h-10 text-sm font-black leading-5 hover:text-[var(--text-accent)]">{product.title}</h3></Link>
                         <div className="flex items-center justify-between gap-2">
                           <span className="text-sm font-black">{ratingFor(product)} / 5</span>
-                          <span className="text-xs text-[#7c6a55]">{deliveryEstimate(product.stock)}</span>
+                          <span className="text-xs text-[var(--text-muted)]">{deliveryEstimate(product.stock)}</span>
                         </div>
                         <div>
                           <span className="text-xl font-black">{money(product.price)}</span>
-                          <span className="ml-2 text-xs text-[#9b8b78] line-through">{money(mrp)}</span>
-                          <p className="text-xs font-bold text-[#1d6b62]">{discount}% off</p>
+                          <span className="ml-2 text-xs text-[var(--text-muted)] line-through">{money(mrp)}</span>
+                          <p className="text-xs font-bold text-[var(--text-accent)]">{discount}% off</p>
                         </div>
                         <div className="grid grid-cols-[1fr_auto] gap-2">
                           {/* ── Add to Cart ── */}
@@ -473,8 +507,8 @@ export default function Home() {
                           <button
                             className={`btn-save min-w-16 border px-3 py-2 text-xs group/save ${
                               isSaved
-                                ? "btn-save-saved border-[#1d6b62] bg-[#dff1e9] text-[#145347] hover:border-red-300 hover:bg-red-50 hover:text-red-600"
-                                : "border-[#c38b46] text-[#6d4618] hover:bg-[#f7e3bd]"
+                                ? "btn-save-saved border-[var(--brand-green-bright)] bg-[var(--badge-green-bg)] text-[var(--badge-green-text)] hover:border-[var(--badge-rose-text)] hover:bg-[var(--badge-rose-bg)] hover:text-[var(--badge-rose-text)]"
+                                : "border-[var(--brand-gold)] text-[var(--brand-gold)] hover:bg-[var(--badge-gold-bg)]"
                             } ${(isSaving || isRemoving) ? "scale-95" : ""}`}
                             disabled={isSaving || isRemoving}
                             onClick={(e) => { ripple(e); toggleWishlist(product); }}
@@ -521,7 +555,7 @@ export default function Home() {
                       </div>
                     </article>
                   );
-                })} : <EmptyState icon="🔍" title="No products found" description="Try adjusting your search or filters to find what you're looking for." actionLabel="Browse all" actionHref="/" />}
+                }) : <EmptyState icon="🔍" title="No products found" description="Try adjusting your search or filters to find what you're looking for." actionLabel="Browse all" actionHref="/" />}
               </div>
             </section>
 
@@ -529,10 +563,14 @@ export default function Home() {
               <h2 className="text-xl font-black">Recommended for you</h2>
               <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {recommended.map((product) => (
-                  <Link className="rounded border border-[#e3d7c7] bg-[#fffaf1] p-3 hover:-translate-y-1" href={`/product/${product._id}`} key={product._id}>
-                    <img alt={product.title} className="h-28 w-full object-contain" src={product.image} />
-                    <p className="mt-2 line-clamp-2 text-sm font-black">{product.title}</p>
-                    <p className="text-sm font-black text-[#1d6b62]">{moneyFromPaise(priceInPaise(product))}</p>
+                  <Link className="rounded border border-[var(--border-primary)] bg-[var(--surface-primary)] p-3 hover:-translate-y-1 flex flex-col justify-between" href={`/product/${product._id}`} key={product._id}>
+                    <div className="h-28 w-full overflow-hidden rounded bg-[var(--surface-secondary)] p-2 flex items-center justify-center">
+                      <img alt={product.title} className="h-full w-full object-contain" src={product.image} />
+                    </div>
+                    <div className="mt-2">
+                      <p className="line-clamp-2 text-sm font-black">{product.title}</p>
+                      <p className="text-sm font-black text-[var(--text-accent)] mt-1">{moneyFromPaise(priceInPaise(product))}</p>
+                    </div>
                   </Link>
                 ))}
               </div>
@@ -542,14 +580,14 @@ export default function Home() {
           <aside className="space-y-4">
             <section className="glass-panel rounded p-4">
               <h2 className="text-xl font-black">Checkout</h2>
-              <p className="mt-1 text-sm text-[#7c6a55]">{cartCount} items · {moneyFromPaise(cartTotal)}</p>
+              <p className="mt-1 text-sm text-[var(--text-muted)]">{cartCount} items · {moneyFromPaise(cartTotal)}</p>
               <div className="mt-4 max-h-56 space-y-3 overflow-auto">
                 {cart.length ? cart.map((item) => (
-                  <div className="flex gap-3 border-b border-[#e3d7c7] pb-3" key={item.productId}>
+                  <div className="flex gap-3 border-b border-[var(--border-primary)] pb-3" key={item.productId}>
                     <img alt={item.title} className="h-14 w-14 rounded object-contain" src={item.image} />
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-black">{item.title}</p>
-                      <p className="text-sm text-[#7c6a55]">{moneyFromPaise(priceInPaise(item))}</p>
+                      <p className="text-sm text-[var(--text-muted)]">{moneyFromPaise(priceInPaise(item))}</p>
                       <div className="mt-1 flex items-center gap-2">
                         <button className="h-7 w-7 rounded border" onClick={() => updateCart(item.productId, item.quantity - 1)} type="button">-</button>
                         <span className="text-sm font-black">{item.quantity}</span>
@@ -557,28 +595,35 @@ export default function Home() {
                       </div>
                     </div>
                   </div>
-                )) : <p className="rounded bg-[#f4efe7] p-3 text-sm text-[#7c6a55]">Your cart is waiting.</p>}
+                )) : <p className="rounded bg-[var(--surface-secondary)] p-3 text-sm text-[var(--text-muted)]">Your cart is waiting.</p>}
               </div>
               <form className="mt-4 space-y-2" onSubmit={checkout}>
                 {Object.keys(shippingDefaults).map((key) => (
                   <label className="block" key={key}>
-                    <input className={`w-full rounded border px-3 py-2 text-sm ${formErrors[key] ? "border-red-500" : "border-[#d8cbbb]"}`} onChange={(event) => setShipping({ ...shipping, [key]: event.target.value })} placeholder={key === "line1" ? "Delivery address *" : `${key[0].toUpperCase() + key.slice(1)}${["name", "city", "phone", "pincode"].includes(key) ? " *" : ""}`} value={shipping[key]} />
+                    <input 
+                      className={`w-full rounded border px-3 py-2 text-sm bg-[var(--input-bg)] text-[var(--text-primary)] ${formErrors[key] ? "border-red-500" : "border-[var(--border-secondary)]"}`} 
+                      onChange={(event) => { const val = event.target.value; setShipping({ ...shipping, [key]: val }); if (key === "pincode" && val.length === 6) fetchPincodeDetails(val); }} 
+                      placeholder={key === "line1" ? "Delivery address *" : `${key[0].toUpperCase() + key.slice(1)}${["name", "city", "phone", "pincode"].includes(key) ? " *" : ""}`}
+                      value={shipping[key]}
+                      {...(key === "phone" ? { maxLength: 10, inputMode: "numeric", onInput: (e) => e.target.value = e.target.value.replace(/[^0-9]/g, "") } : {})}
+                      {...(key === "pincode" ? { maxLength: 6, inputMode: "numeric", onInput: (e) => e.target.value = e.target.value.replace(/[^0-9]/g, "") } : {})}
+                    />
                     {formErrors[key] ? <span className="text-xs font-bold text-red-600">{formErrors[key]}</span> : null}
                   </label>
                 ))}
                 <button className="btn-primary w-full px-4 py-3 disabled:opacity-50" disabled={!user || busy} onClick={ripple} type="submit">Pay with Razorpay</button>
-                {!user ? <p className="text-xs text-[#7c6a55]">Sign in to place an order.</p> : null}
+                {!user ? <p className="text-xs text-[var(--text-muted)]">Sign in to place an order.</p> : null}
               </form>
             </section>
 
             <section className="glass-panel rounded p-4">
               <h2 className="text-xl font-black">Profile dashboard</h2>
-              <p className="mt-2 text-sm text-[#7c6a55]">{user ? `${user.name} · ${user.email}` : "Sign in to unlock profile insights."}</p>
+              <p className="mt-2 text-sm text-[var(--text-muted)]">{user ? `${user.name} · ${user.email}` : "Sign in to unlock profile insights."}</p>
               <div className="mt-4 grid grid-cols-2 gap-2 text-center">
-                <div className="rounded bg-[#f4efe7] p-3"><p className="text-2xl font-black">{orders.length}</p><p className="text-xs font-bold">Orders</p></div>
-                <div className="rounded bg-[#f4efe7] p-3"><p className="text-2xl font-black">{cartCount}</p><p className="text-xs font-bold">Cart items</p></div>
+                <div className="rounded bg-[var(--surface-secondary)] p-3"><p className="text-2xl font-black text-[var(--text-primary)]">{orders.length}</p><p className="text-xs font-bold text-[var(--text-muted)]">Orders</p></div>
+                <div className="rounded bg-[var(--surface-secondary)] p-3"><p className="text-2xl font-black text-[var(--text-primary)]">{cartCount}</p><p className="text-xs font-bold text-[var(--text-muted)]">Cart items</p></div>
               </div>
-              <Link className="mt-3 block rounded border border-[#123f3a] px-4 py-2 text-center text-sm font-black text-[#123f3a]" href="/profile">Open profile</Link>
+              <Link className="mt-3 block rounded border border-[var(--brand-green)] px-4 py-2 text-center text-sm font-black text-[var(--brand-green)] hover:bg-[var(--brand-green)] hover:text-white" href="/profile">Open profile</Link>
             </section>
           </aside>
         </div>

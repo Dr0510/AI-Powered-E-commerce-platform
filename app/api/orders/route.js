@@ -160,6 +160,7 @@ export async function PATCH(request) {
 
     return Response.json({ order: presentOrder(order) });
   } catch (error) {
+    console.error("Order update error:", error);
     return Response.json({ message: "Unable to update order", error: error.message }, { status: 500 });
   }
 }

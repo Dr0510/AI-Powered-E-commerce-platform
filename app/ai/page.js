@@ -984,7 +984,7 @@ function SetupBuilderTab() {
       </form>
 
       {/* Quick budget chips */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-6" suppressHydrationWarning>
         {[30000, 50000, 60000, 80000, 100000].map((b) => (
           <button
             key={b}
@@ -1011,8 +1011,8 @@ function SetupBuilderTab() {
         <div className="ai-panel stagger-in">
           <div className="setup-total mb-6">
             <p className="text-sm font-bold text-[#f4d7a1]">{result.label}</p>
-            <p className="text-4xl font-black mt-2">₹{result.totalCost?.toLocaleString("en-IN")}</p>
-            <p className="text-sm mt-2">
+            <p className="text-4xl font-black mt-2" suppressHydrationWarning>₹{result.totalCost?.toLocaleString("en-IN")}</p>
+            <p className="text-sm mt-2" suppressHydrationWarning>
               Budget: ₹{result.budget?.toLocaleString("en-IN")} ·
               {result.underBudget
                 ? ` Saved ₹${result.savings?.toLocaleString("en-IN")} ✓`
@@ -1032,12 +1032,12 @@ function SetupBuilderTab() {
                     )}
                     <p className="text-sm font-black line-clamp-2">{item.product.title}</p>
                     <p className="text-lg font-black themed-text-accent mt-1">{money(item.price)}</p>
-                    <p className="text-xs themed-text-muted">Budget: ₹{item.budget?.toLocaleString("en-IN")}</p>
+                    <p className="text-xs themed-text-muted" suppressHydrationWarning>Budget: ₹{item.budget?.toLocaleString("en-IN")}</p>
                   </Link>
                 ) : (
                   <div className="py-4">
                     <p className="text-sm themed-text-muted">No match found</p>
-                    <p className="text-xs themed-text-muted">Budget: ₹{item.budget?.toLocaleString("en-IN")}</p>
+                    <p className="text-xs themed-text-muted" suppressHydrationWarning>Budget: ₹{item.budget?.toLocaleString("en-IN")}</p>
                   </div>
                 )}
               </div>

@@ -436,7 +436,7 @@ button:active:not(:disabled) {
   display: flex;
   gap: 2px;
   overflow-x: auto;
-  border-bottom: 2px solid #e3d7c7;
+  border-bottom: 2px solid var(--border-primary);
   scrollbar-width: none;
 }
 .ai-tabs::-webkit-scrollbar { display: none; }
@@ -446,7 +446,7 @@ button:active:not(:disabled) {
   font-size: 13px;
   font-weight: 900;
   white-space: nowrap;
-  color: #7c6a55;
+  color: var(--text-muted);
   border-bottom: 3px solid transparent;
   margin-bottom: -2px;
   transition: color 200ms, border-color 200ms, background 200ms;
@@ -498,9 +498,9 @@ button:active:not(:disabled) {
 }
 .chat-ai {
   align-self: flex-start;
-  background: #fffaf1;
-  color: #3a322a;
-  border: 1px solid #e3d7c7;
+  background: var(--chat-ai-bg);
+  color: var(--text-secondary);
+  border: 1px solid var(--chat-ai-border);
   border-bottom-left-radius: 4px;
 }
 
@@ -596,10 +596,10 @@ button:active:not(:disabled) {
   gap: 16px;
 }
 .setup-card {
-  border: 1px solid #e3d7c7;
+  border: 1px solid var(--border-primary);
   border-radius: 14px;
   padding: 20px;
-  background: #fffaf1;
+  background: var(--card-bg);
   text-align: center;
   transition: transform 200ms, box-shadow 200ms;
 }
@@ -621,8 +621,8 @@ button:active:not(:disabled) {
 
 /* ── Price chart ── */
 .price-chart-wrap {
-  background: #fffaf1;
-  border: 1px solid #e3d7c7;
+  background: var(--card-bg);
+  border: 1px solid var(--border-primary);
   border-radius: 14px;
   padding: 20px;
 }
@@ -638,9 +638,9 @@ button:active:not(:disabled) {
   gap: 14px;
   align-items: center;
   padding: 14px;
-  border: 1px solid #e3d7c7;
+  border: 1px solid var(--border-primary);
   border-radius: 12px;
-  background: #fffaf1;
+  background: var(--card-bg);
   transition: transform 200ms, box-shadow 200ms;
 }
 .watchlist-item:hover {
@@ -667,10 +667,10 @@ button:active:not(:disabled) {
   gap: 14px;
 }
 .compat-card {
-  border: 1px solid #e3d7c7;
+  border: 1px solid var(--border-primary);
   border-radius: 14px;
   padding: 16px;
-  background: #fffaf1;
+  background: var(--card-bg);
   transition: transform 200ms, box-shadow 200ms;
 }
 .compat-card:hover {
@@ -866,12 +866,23 @@ button:active:not(:disabled) {
   transform: translateY(-4px);
   box-shadow: var(--card-hover-shadow);
 }
-.trending-card img {
+.trending-card .trending-img-wrap {
   height: 100px;
   width: 100%;
-  object-fit: contain;
   border-radius: 8px;
   margin-bottom: 10px;
+  background: var(--surface-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px;
+  overflow: hidden;
+}
+.trending-card .trending-img-wrap img {
+  height: 100%;
+  width: 100%;
+  object-fit: contain;
+  margin-bottom: 0;
 }
 .trending-badge {
   display: inline-flex;
@@ -1555,6 +1566,7 @@ textarea:focus-visible {
 
 [data-theme="dark"] button.btn-category,
 [data-theme="dark"] select,
+[data-theme="dark"] textarea,
 [data-theme="dark"] input {
   background-color: var(--input-bg);
   border-color: var(--input-border);
@@ -1805,4 +1817,24 @@ a, button {
 
 a[class*="nav"], a[class*="link"] {
   padding: 8px 12px;
+}
+
+/* ═══════════════════════════════════════════
+   CLERK THEMING
+   Handled by ClerkThemeProvider via the
+   official appearance API — no structural
+   CSS needed here.
+   ═══════════════════════════════════════════ */
+
+
+/* Pros and Cons Card Dark Theme Overrides */
+[data-theme="dark"] .pros-card {
+  background: var(--badge-green-bg) !important;
+  border-color: rgba(79, 209, 197, 0.4) !important;
+  color: var(--text-primary) !important;
+}
+[data-theme="dark"] .cons-card {
+  background: var(--badge-rose-bg) !important;
+  border-color: rgba(247, 160, 160, 0.4) !important;
+  color: var(--text-primary) !important;
 }
