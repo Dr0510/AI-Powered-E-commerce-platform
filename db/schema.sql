@@ -159,3 +159,104 @@ CREATE INDEX IF NOT EXISTS orders_status_idx ON orders (status);
 CREATE INDEX IF NOT EXISTS order_items_order_idx ON order_items (order_id);
 CREATE INDEX IF NOT EXISTS reviews_product_created_idx ON reviews (product_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS payments_razorpay_order_idx ON payments (razorpay_order_id);
+
+-- Multi-Vendor Marketplace Tables
+CREATE TABLE IF NOT EXISTS sellers (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id uuid NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+  shop_name text NOT NULL UNIQUE,
+  shop_slug text NOT NULL UNIQUE,
+  description text,
+  logo_url text,
+  banner_url text,
+  category text,
+  phone text,
+  email text,
+  address text,
+  city text,
+  state text,
+  pincode text,
+  verification_status text NOT NULL DEFAULT 'pending' CHECK (verification_status IN ('pending', 'verified', 'rejected')),
+  verification_badge boolean NOT NULL DEFAULT false,
+  performance_score decimal(3,2) DEFAULT 0,
+  vacation_mode boolean NOT NULL DEFAULT false,
+  subscription_plan text DEFAULT 'basic' CHECK (subscription_plan IN ('basic', 'pro')),
+  commission_rate decimal(5,2) NOT NULL DEFAULT 10,
+  total_earnings decimal(15,2) DEFAULT 0,
+  followers_count integer DEFAULT 0,
+  announcement_banner text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS seller_products (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  product_id uuid NOT NULL REFERENCES products(id) ON DELETE CASCADE,
+  seller_id uuid NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+  seller_price_in_paise integer NOT NULL CHECK (seller_price_in_paise >= 0),
+  stock integer NOT NULL DEFAULT 0 CHECK (stock >= 0),
+  fulfillment_type text DEFAULT 'seller' CHECK (fulfillment_type IN ('seller', 'platform')),
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (product_id, seller_id)
+);
+
+CREATE TABLE IF NOT EXISTS seller_reviews (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  seller_id uuid NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+  buyer_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  rating integer NOT NULL CHECK (rating BETWEEN 1 AND 5),
+  comment text,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS seller_coupons (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  seller_id uuid NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+  code text NOT NULL UNIQUE,
+  discount_type text NOT NULL CHECK (discount_type IN ('flat', 'percent')),
+  discount_value decimal(10,2) NOT NULL,
+  min_purchase_in_paise integer DEFAULT 0,
+  max_uses integer,
+  used_count integer DEFAULT 0,
+  expiry_date timestamptz,
+  active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS seller_payouts (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  seller_id uuid NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+  amount_in_paise integer NOT NULL CHECK (amount_in_paise >= 0),
+  status text NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+  bank_account text,
+  upi text,
+  transaction_id text,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS seller_chat (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  seller_id uuid NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+  customer_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  message text NOT NULL,
+  sender_type text NOT NULL CHECK (sender_type IN ('seller', 'customer')),
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS seller_followers (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  seller_id uuid NOT NULL REFERENCES sellers(id) ON DELETE CASCADE,
+  follower_id uuid NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  UNIQUE (seller_id, follower_id)
+);
+
+-- Indexes
+CREATE INDEX IF NOT EXISTS sellers_verification_idx ON sellers (verification_status);
+CREATE INDEX IF NOT EXISTS sellers_slug_idx ON sellers (shop_slug);
+CREATE INDEX IF NOT EXISTS seller_products_seller_idx ON seller_products (seller_id);
+CREATE INDEX IF NOT EXISTS seller_reviews_seller_idx ON seller_reviews (seller_id);
+CREATE INDEX IF NOT EXISTS seller_coupons_seller_idx ON seller_coupons (seller_id);
+CREATE INDEX IF NOT EXISTS seller_payouts_seller_idx ON seller_payouts (seller_id);

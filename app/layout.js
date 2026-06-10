@@ -13,7 +13,6 @@ export const metadata = {
   description: "A premium multi-category commerce experience from DR MART by DR Group, with curated sellers, fast checkout, and refined order tracking.",
 };
 
-/* Inline script to set data-theme before first paint (prevents flash) */
 const themeScript = `
 (function(){
   try {
@@ -31,7 +30,9 @@ export default function RootLayout({ children }) {
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
       </head>
-      <body className={`min-h-full flex flex-col ${inter.className}`}>{children}</body>
+      <body className={`min-h-full flex flex-col ${inter.className}`} suppressHydrationWarning>
+        {children}
+      </body>
     </html>
   );
 
@@ -45,4 +46,3 @@ export default function RootLayout({ children }) {
     </ClerkThemeProvider>
   );
 }
-

@@ -1,25 +1,39 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useSyncExternalStore } from "react";
 
 /* ─── Shared theme hook ─── */
-export function useTheme() {
-  const [theme, setTheme] = useState("light");
+const themeListeners = new Set();
 
-  useEffect(() => {
-    const stored = localStorage.getItem("dr-theme");
-    const current = document.documentElement.getAttribute("data-theme");
-    setTheme(stored || current || "light");
-  }, []);
+function notifyThemeChange() {
+  themeListeners.forEach((cb) => cb());
+}
+
+function readTheme() {
+  if (typeof window === "undefined") return "light";
+  try {
+    return localStorage.getItem("dr-theme") || document.documentElement.getAttribute("data-theme") || "light";
+  } catch {
+    return "light";
+  }
+}
+
+export function useTheme() {
+  const theme = useSyncExternalStore(
+    (callback) => {
+      themeListeners.add(callback);
+      return () => themeListeners.delete(callback);
+    },
+    readTheme,
+    () => "light",
+  );
 
   const toggle = useCallback(() => {
-    setTheme((prev) => {
-      const next = prev === "dark" ? "light" : "dark";
-      document.documentElement.setAttribute("data-theme", next);
-      localStorage.setItem("dr-theme", next);
-      return next;
-    });
-  }, []);
+    const next = theme === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("dr-theme", next);
+    notifyThemeChange();
+  }, [theme]);
 
   return { theme, toggle };
 }
@@ -27,9 +41,11 @@ export function useTheme() {
 /* ─── Theme toggle button ─── */
 export default function ThemeToggle({ className = "" }) {
   const { theme, toggle } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => setMounted(true), []);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   if (!mounted) return <div className={`theme-toggle ${className}`} aria-hidden="true" />;
 

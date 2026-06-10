@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
-import { useState, useEffect, useRef, useCallback, useMemo } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo, useSyncExternalStore } from "react";
 import { money } from "@/lib/format";
 import { StoreHeader, StatusPill } from "@/components/StoreShell";
 
@@ -17,23 +17,37 @@ async function api(path, options = {}) {
 }
 
 /* ─────────────────────────── THEME HOOK ─────────────────────────── */
-function useTheme() {
-  const [theme, setTheme] = useState("light");
+const aiThemeListeners = new Set();
 
-  useEffect(() => {
-    const stored = localStorage.getItem("dr-theme");
-    const current = document.documentElement.getAttribute("data-theme");
-    setTheme(stored || current || "light");
-  }, []);
+function notifyAiThemeChange() {
+  aiThemeListeners.forEach((cb) => cb());
+}
+
+function readAiTheme() {
+  if (typeof window === "undefined") return "light";
+  try {
+    return localStorage.getItem("dr-theme") || document.documentElement.getAttribute("data-theme") || "light";
+  } catch {
+    return "light";
+  }
+}
+
+function useTheme() {
+  const theme = useSyncExternalStore(
+    (callback) => {
+      aiThemeListeners.add(callback);
+      return () => aiThemeListeners.delete(callback);
+    },
+    readAiTheme,
+    () => "light",
+  );
 
   const toggle = useCallback(() => {
-    setTheme((prev) => {
-      const next = prev === "dark" ? "light" : "dark";
-      document.documentElement.setAttribute("data-theme", next);
-      localStorage.setItem("dr-theme", next);
-      return next;
-    });
-  }, []);
+    const next = theme === "dark" ? "light" : "dark";
+    document.documentElement.setAttribute("data-theme", next);
+    localStorage.setItem("dr-theme", next);
+    notifyAiThemeChange();
+  }, [theme]);
 
   return { theme, toggle };
 }
@@ -452,7 +466,7 @@ export default function AIHubPage() {
                 className="trending-card stagger-in"
                 style={{ animationDelay: `${i * 60}ms` }}
               >
-                {p.image && <img src={p.image} alt={p.title} />}
+                {p.image && (<div className="trending-img-wrap"><img src={p.image} alt={p.title} /></div>)}
                 <p className="text-xs font-black line-clamp-2 themed-text-primary">{p.title}</p>
                 <p className="text-sm font-black themed-text-accent mt-1">{money(p.price)}</p>
               </Link>
@@ -1059,16 +1073,17 @@ function SetupBuilderTab() {
 /* ═══════════════════════════════════════════════════════════════════
    TAB 5: PRICE DROP TRACKER
    ═══════════════════════════════════════════════════════════════════ */
+function readWatchlist() {
+  if (typeof window === "undefined") return [];
+  try { return JSON.parse(localStorage.getItem("dr_price_watchlist") || "[]"); }
+  catch { return []; }
+}
+
 function PriceTrackerTab({ products }) {
-  const [watchlist, setWatchlist] = useState([]);
+  const [watchlist, setWatchlist] = useState(readWatchlist);
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [chartProduct, setChartProduct] = useState(null);
   const chartCanvasRef = useRef(null);
-
-  useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem("dr_price_watchlist") || "[]");
-    setWatchlist(saved);
-  }, []);
 
   function addToWatchlist(productId) {
     const product = products.find((p) => p._id === productId);

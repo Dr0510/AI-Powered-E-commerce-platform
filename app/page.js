@@ -109,21 +109,30 @@ export default function Home() {
   const recommended = useMemo(() => visibleProducts.filter((product) => ratingFor(product) >= 4.2).slice(0, 4), [visibleProducts]);
 
   async function loadProducts(nextQuery = query, nextCategory = category) {
-    const params = new URLSearchParams();
-    if (nextQuery) params.set("q", nextQuery);
-    if (nextCategory) params.set("category", nextCategory);
-    params.set("ai", "true");
-    const data = await api(`/api/products?${params}`);
-    setProducts(data.products);
-    setStatus(`${data.products.length} products matched your selection.`);
+    try {
+      const params = new URLSearchParams();
+      if (nextQuery) params.set("q", nextQuery);
+      if (nextCategory) params.set("category", nextCategory);
+      params.set("ai", "true");
+      const data = await api(`/api/products?${params}`);
+      const productsList = Array.isArray(data.products) ? data.products : [];
+      setProducts(productsList);
+      setStatus(`${productsList.length} products matched your selection.`);
+    } catch (error) {
+      setStatus(error.message);
+    }
   }
 
   async function loadUserAndOrders() {
-    const userData = await api("/api/auth/me");
-    setUser(userData.user);
-    if (userData.user) {
-      const orderData = await api("/api/orders");
-      setOrders(orderData.orders);
+    try {
+      const userData = await api("/api/auth/me");
+      setUser(userData && userData.user ? userData.user : null);
+      if (userData && userData.user) {
+        const orderData = await api("/api/orders");
+        setOrders(Array.isArray(orderData.orders) ? orderData.orders : []);
+      }
+    } catch (error) {
+      console.error("loadUserAndOrders failed:", error.message);
     }
   }
 
@@ -131,15 +140,19 @@ export default function Home() {
     let active = true;
     async function load() {
       try {
-        const [productData, userData] = await Promise.all([api("/api/products?ai=true"), api("/api/auth/me")]);
+        const [productData, userData] = await Promise.all([
+          api("/api/products?ai=true").catch(e => ({ products: [] })),
+          api("/api/auth/me").catch(e => ({ user: null }))
+        ]);
         if (!active) return;
-        setProducts(productData.products);
-        setUser(userData.user);
-        setStatus(`${productData.products.length} products ready.`);
+        const productsList = Array.isArray(productData.products) ? productData.products : [];
+        setProducts(productsList);
+        setUser(userData && userData.user ? userData.user : null);
+        setStatus(`${productsList.length} products ready.`);
         setIsLoading(false);
-        if (userData.user) {
-          const orderData = await api("/api/orders");
-          if (active) setOrders(orderData.orders);
+        if (userData && userData.user) {
+          const orderData = await api("/api/orders").catch(e => ({ orders: [] }));
+          if (active) setOrders(Array.isArray(orderData.orders) ? orderData.orders : []);
         }
       } catch (error) {
         if (active) setStatus(error.message);
@@ -241,18 +254,36 @@ export default function Home() {
   }
 
   async function fetchPincodeDetails(pincode) {
-    if (!pincode || !/^[0-9]{6}$/.test(pincode.replace(/\D/g, ""))) return;
-    
+    const normalizedPincode = pincode.replace(/\D/g, "");
+    if (!normalizedPincode || !/^[0-9]{6}$/.test(normalizedPincode)) return;
+
     try {
-      const response = await api(`/api/pincode?pincode=${pincode}`);
+      const lookup = await fetch(`/api/pincode?pincode=${normalizedPincode}`);
+      const response = await lookup.json().catch(() => ({}));
+
+      if (!lookup.ok) {
+        setFormErrors((current) => ({
+          ...current,
+          pincode: response.message || "Pincode not found",
+        }));
+        return;
+      }
+
       if (response.status === "success" && response.data) {
         setShipping(prev => ({
           ...prev,
           city: response.data.city || prev.city,
         }));
+        setFormErrors((current) => {
+          const { pincode: _pincodeError, ...next } = current;
+          return next;
+        });
       }
     } catch (error) {
-      console.error("Pincode lookup failed:", error);
+      setFormErrors((current) => ({
+        ...current,
+        pincode: "Unable to verify pincode right now",
+      }));
     }
   }
 

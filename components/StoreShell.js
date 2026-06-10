@@ -59,10 +59,13 @@ export function StoreHeader({ cartCount = 0, user = null }) {
             </button>
 
             <Link className="store-nav-link" href="/" onClick={() => setMobileOpen(false)}>Shop</Link>
+            <Link className="store-nav-link" href="/sellers" onClick={() => setMobileOpen(false)}>🏪 Sellers</Link>
+            <Link className="store-nav-link" href="/leaderboard" onClick={() => setMobileOpen(false)}>🏆 Top Sellers</Link>
             <Link className="ai-nav-link rounded px-3 py-2" href="/ai" onClick={() => setMobileOpen(false)}>✨ AI Hub</Link>
             <Link className="store-nav-link" href="/wishlist" onClick={() => setMobileOpen(false)}>Wishlist</Link>
             <Link className="store-nav-link" href="/orders" onClick={() => setMobileOpen(false)}>Orders</Link>
             <Link className="store-nav-link" href="/profile" onClick={() => setMobileOpen(false)}>Profile</Link>
+            <Link className="store-nav-link" href="/seller/dashboard" onClick={() => setMobileOpen(false)}>📊 Seller</Link>
             <Link className="store-cart-btn" href="/cart" onClick={() => setMobileOpen(false)}>
               Cart {cartCount ? `(${cartCount})` : ""}
             </Link>
