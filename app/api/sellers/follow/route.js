@@ -10,6 +10,13 @@ export async function POST(request) {
     const { sellerId } = await request.json();
     if (!sellerId) return Response.json({ message: "Seller ID required" }, { status: 400 });
 
+    // Prevent self-follow
+    const [targetSeller] = await sql`SELECT user_id FROM sellers WHERE id = ${sellerId}`;
+    if (!targetSeller) return Response.json({ message: "Seller not found" }, { status: 404 });
+    if (targetSeller.user_id === user._id) {
+      return Response.json({ message: "Cannot follow yourself" }, { status: 400 });
+    }
+
     // Check if already following
     const [existing] = await sql`
       SELECT id FROM seller_followers WHERE seller_id = ${sellerId} AND follower_id = ${user._id}

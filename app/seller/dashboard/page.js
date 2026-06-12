@@ -7,6 +7,7 @@ import { useToast, ToastContainer } from "@/components/Toast";
 export default function SellerDashboard() {
   const [seller, setSeller] = useState(null);
   const [stats, setStats] = useState({});
+  const [statsError, setStatsError] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toasts, showToast, dismissToast } = useToast();
 
@@ -14,10 +15,10 @@ export default function SellerDashboard() {
     let active = true;
     async function load() {
       try {
-        const userData = await api("/api/auth/me");
-        if (!userData.user) throw new Error("Not authenticated");
-
-        const sellerData = await api("/api/sellers/me");
+        // Parallelize: fetch seller data and stats simultaneously
+        const [sellerData] = await Promise.all([
+          api("/api/sellers/me"),
+        ]);
         if (!active) return;
 
         if (!sellerData.seller) {
@@ -27,14 +28,18 @@ export default function SellerDashboard() {
         }
 
         setSeller(sellerData.seller);
+
+        // Fetch stats in parallel
         try {
           const statsData = await api(`/api/sellers/${sellerData.seller.id}/stats`);
           if (active) setStats(statsData);
         } catch (e) {
           console.error("Stats load failed:", e);
+          if (active) setStatsError(true);
         }
       } catch (error) {
         console.error(error);
+        showToast("Failed to load dashboard data", "error");
       } finally {
         if (active) setLoading(false);
       }

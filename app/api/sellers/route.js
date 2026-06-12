@@ -124,7 +124,7 @@ export async function PATCH(request) {
   if (response) return response;
 
   try {
-    const { sellerId, ...updates } = await request.json();
+    const { sellerId, shop_name, description, phone, address, city, state, pincode, logo_url, banner_url, vacation_mode } = await request.json();
     if (!sellerId) {
       return Response.json({ message: "sellerId is required" }, { status: 400 });
     }
@@ -132,8 +132,18 @@ export async function PATCH(request) {
     const sql = db();
 
     const [seller] = await sql`
-      UPDATE sellers
-      SET ${sql(updates)}, updated_at = now()
+      UPDATE sellers SET
+        shop_name = COALESCE(${shop_name || null}, shop_name),
+        description = COALESCE(${description !== undefined ? description : null}, description),
+        phone = COALESCE(${phone || null}, phone),
+        address = COALESCE(${address || null}, address),
+        city = COALESCE(${city || null}, city),
+        state = COALESCE(${state || null}, state),
+        pincode = COALESCE(${pincode || null}, pincode),
+        logo_url = COALESCE(${logo_url || null}, logo_url),
+        banner_url = COALESCE(${banner_url || null}, banner_url),
+        vacation_mode = COALESCE(${vacation_mode !== undefined ? vacation_mode : null}, vacation_mode),
+        updated_at = now()
       WHERE id = ${sellerId} AND user_id = ${user._id}
       RETURNING *
     `;

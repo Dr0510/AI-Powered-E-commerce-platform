@@ -15,15 +15,20 @@ export async function GET() {
   `;
 
   // Calculate available balance (earnings - payouts)
+  // total_earnings is stored in rupees (numeric), payouts are in paise (bigint)
   const [{ paid }] = await sql`
     SELECT COALESCE(SUM(amount_in_paise), 0) as paid FROM seller_payouts WHERE seller_id = ${seller.id} AND status = 'completed'
   `;
 
+  const totalEarningsInPaise = Math.round(Number(seller.total_earnings || 0) * 100);
+  const paidAmount = Number(paid);
+  const availableBalance = Math.max(0, totalEarningsInPaise - paidAmount);
+
   return Response.json({
     payouts,
     totalEarnings: seller.total_earnings,
-    availableBalance: (Number(seller.total_earnings) * 100) - Number(paid),
-    paidSoFar: Number(paid),
+    availableBalance,
+    paidSoFar: paidAmount,
   });
 }
 
@@ -45,8 +50,8 @@ export async function POST(request) {
     const [{ paid }] = await sql`
       SELECT COALESCE(SUM(amount_in_paise), 0) as paid FROM seller_payouts WHERE seller_id = ${seller.id} AND status IN ('completed', 'processing')
     `;
-    const totalEarningsInPaise = Number(seller.total_earnings) * 100;
-    const availableBalance = totalEarningsInPaise - Number(paid);
+    const totalEarningsInPaise = Math.round(Number(seller.total_earnings || 0) * 100);
+    const availableBalance = Math.max(0, totalEarningsInPaise - Number(paid));
 
     if (amountInPaise > availableBalance) {
       return Response.json({ message: "Insufficient balance" }, { status: 400 });

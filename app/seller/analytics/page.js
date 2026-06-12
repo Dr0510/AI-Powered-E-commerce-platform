@@ -14,18 +14,22 @@ export default function SellerAnalytics() {
     let active = true;
     async function load() {
       try {
-        const userData = await api("/api/auth/me");
-        if (!userData.user) throw new Error("Not authenticated");
         const sellerData = await api("/api/sellers/me");
         if (!active) return;
         if (!sellerData.seller) throw new Error("Not a seller");
 
         setSeller(sellerData.seller);
-        const statsData = await api(`/api/sellers/${sellerData.seller.id}/stats`);
 
-        const ordersData = await api("/api/sellers/orders");
-        const totalRevenue = ordersData.orders.reduce((sum, o) => sum + (o.total_in_paise || 0), 0);
-        const paidOrders = ordersData.orders.filter(o => o.fulfillment_status === "delivered").length;
+        // Fetch stats and orders in parallel
+        const [statsData, ordersData] = await Promise.all([
+          api(`/api/sellers/${sellerData.seller.id}/stats`).catch(() => ({})),
+          api("/api/sellers/orders").catch(() => ({ orders: [] })),
+        ]);
+
+        const orders = ordersData.orders || [];
+        const totalRevenue = orders.reduce((sum, o) => sum + (o.total_in_paise || 0), 0);
+        const paidOrders = orders.filter(o => o.fulfillment_status === "delivered").length;
+
         if (active) setStats(prev => ({ ...prev, ...statsData, revenue: totalRevenue / 100, paidOrders }));
       } catch (error) {
         showToast(error.message, "error");

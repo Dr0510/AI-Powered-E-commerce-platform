@@ -22,15 +22,27 @@ export async function GET() {
     LIMIT 100
   `;
 
-  // Get order items for seller's products
-  const ordersWithItems = await Promise.all(orders.map(async (order) => {
-    const items = await sql`
-      SELECT oi.*, sp.stock as seller_stock
-      FROM order_items oi
-      JOIN seller_products sp ON sp.product_id = oi.product_id
-      WHERE oi.order_id = ${order.id} AND sp.seller_id = ${seller.id}
-    `;
-    return { ...order, items };
+  if (orders.length === 0) return Response.json({ orders: [] });
+
+  // Batch-load order items for all orders in a single query
+  const orderIds = orders.map(o => o.id);
+  const allItems = await sql`
+    SELECT oi.*, sp.stock as seller_stock, oi.order_id
+    FROM order_items oi
+    JOIN seller_products sp ON sp.product_id = oi.product_id
+    WHERE oi.order_id = ANY(${orderIds}) AND sp.seller_id = ${seller.id}
+  `;
+
+  const itemsByOrderId = {};
+  for (const item of allItems) {
+    const oid = item.order_id;
+    if (!itemsByOrderId[oid]) itemsByOrderId[oid] = [];
+    itemsByOrderId[oid].push(item);
+  }
+
+  const ordersWithItems = orders.map(order => ({
+    ...order,
+    items: itemsByOrderId[order.id] || [],
   }));
 
   return Response.json({ orders: ordersWithItems });
@@ -55,14 +67,22 @@ export async function PATCH(request) {
       return Response.json({ message: "Invalid status" }, { status: 400 });
     }
 
-    // Verify seller owns products in this order
-    const [orderItem] = await sql`
-      SELECT oi.id FROM order_items oi
+    // Verify seller owns ALL products in this order
+    const orderItems = await sql`
+      SELECT oi.id, oi.product_id FROM order_items oi
+      WHERE oi.order_id = ${orderId}
+    `;
+    if (orderItems.length === 0) return Response.json({ message: "Order not found" }, { status: 404 });
+
+    // Count how many of this order's products belong to this seller
+    const [{ owned }] = await sql`
+      SELECT COUNT(*)::int as owned FROM order_items oi
       JOIN seller_products sp ON sp.product_id = oi.product_id
       WHERE oi.order_id = ${orderId} AND sp.seller_id = ${seller.id}
-      LIMIT 1
     `;
-    if (!orderItem) return Response.json({ message: "Order not found" }, { status: 404 });
+    if (Number(owned) !== orderItems.length) {
+      return Response.json({ message: "Not authorized to update this order" }, { status: 403 });
+    }
 
     const [updatedOrder] = await sql`
       UPDATE orders SET fulfillment_status = ${fulfillmentStatus}, updated_at = now() WHERE id = ${orderId} RETURNING id

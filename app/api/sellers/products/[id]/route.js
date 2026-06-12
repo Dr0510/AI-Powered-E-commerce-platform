@@ -39,24 +39,21 @@ export async function PATCH(request, { params }) {
     if (body.active !== undefined) updates.active = Boolean(body.active);
     if (body.fulfillmentType) updates.fulfillment_type = body.fulfillmentType;
 
-    // Update product
-    if (Object.keys(updates).some(k => !k.startsWith('seller_'))) {
-      const productFields = {};
-      if (updates.title) productFields.title = updates.title;
-      if (updates.description !== undefined) productFields.description = updates.description;
-      if (updates.price_in_paise) productFields.price_in_paise = updates.price_in_paise;
-      if (updates.category) productFields.category = updates.category;
-      if (updates.stock !== undefined) productFields.stock = updates.stock;
-      if (updates.image) productFields.image = updates.image;
-      if (updates.images) productFields.images = updates.images;
-      if (updates.tags) productFields.tags = updates.tags;
-      if (updates.active !== undefined) productFields.active = updates.active;
-
-      if (Object.keys(productFields).length > 0) {
-        await sql`
-          UPDATE products SET ${sql(productFields)}, updated_at = now() WHERE id = ${id}
-        `;
-      }
+    // Update product with explicit column assignments
+    if (updates.title !== undefined || updates.description !== undefined || updates.price_in_paise !== undefined || updates.category !== undefined || updates.stock !== undefined || updates.image !== undefined || updates.images !== undefined || updates.tags !== undefined || updates.active !== undefined) {
+      await sql`
+        UPDATE products SET
+          title = COALESCE(${updates.title || null}, title),
+          description = COALESCE(${updates.description !== undefined ? updates.description : null}, description),
+          price_in_paise = COALESCE(${updates.price_in_paise || null}, price_in_paise),
+          category = COALESCE(${updates.category || null}, category),
+          stock = COALESCE(${updates.stock !== undefined ? updates.stock : null}, stock),
+          image = COALESCE(${updates.image || null}, image),
+          tags = COALESCE(${updates.tags || null}, tags),
+          active = COALESCE(${updates.active !== undefined ? updates.active : null}, active),
+          updated_at = now()
+        WHERE id = ${id}
+      `;
     }
 
     // Update seller_product record

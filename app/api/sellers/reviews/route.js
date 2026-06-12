@@ -32,6 +32,25 @@ export async function POST(request) {
       return Response.json({ message: "Seller ID and rating required" }, { status: 400 });
     }
 
+    // Prevent self-review
+    const [seller] = await sql`SELECT user_id FROM sellers WHERE id = ${sellerId}`;
+    if (!seller) return Response.json({ message: "Seller not found" }, { status: 404 });
+    if (seller.user_id === user._id) {
+      return Response.json({ message: "Cannot review yourself" }, { status: 400 });
+    }
+
+    // Verify buyer has purchased from this seller
+    const [hasPurchased] = await sql`
+      SELECT oi.id FROM order_items oi
+      JOIN orders o ON o.id = oi.order_id
+      JOIN seller_products sp ON sp.product_id = oi.product_id
+      WHERE sp.seller_id = ${sellerId} AND o.user_id = ${user._id} AND o.status IN ('paid', 'completed', 'delivered')
+      LIMIT 1
+    `;
+    if (!hasPurchased) {
+      return Response.json({ message: "You must purchase from this seller before reviewing" }, { status: 403 });
+    }
+
     const [existing] = await sql`SELECT id FROM seller_reviews WHERE seller_id = ${sellerId} AND buyer_id = ${user._id}`;
     if (existing) {
       return Response.json({ message: "You already reviewed this seller" }, { status: 409 });
