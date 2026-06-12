@@ -423,6 +423,7 @@ button:active:not(:disabled) {
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -1257,6 +1258,76 @@ button:active:not(:disabled) {
 }
 
 /* ═══════════════════════════════════════════
+   SELLER DASHBOARD — SIDEBAR & LAYOUT
+   ═══════════════════════════════════════════ */
+.seller-page {
+  background: var(--shell-bg);
+  min-height: 100vh;
+}
+
+.seller-sidebar-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-primary) transparent;
+}
+.seller-sidebar-scroll::-webkit-scrollbar { width: 4px; }
+.seller-sidebar-scroll::-webkit-scrollbar-thumb {
+  background: var(--border-primary);
+  border-radius: 4px;
+}
+.seller-sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+
+.seller-stat-card {
+  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, border-color 0.2s;
+}
+.seller-stat-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 20px 60px rgba(0,0,0,0.08), 0 8px 24px rgba(0,0,0,0.04);
+  border-color: var(--border-secondary);
+}
+[data-theme="dark"] .seller-stat-card:hover {
+  box-shadow: 0 20px 60px rgba(0,0,0,0.35), 0 8px 24px rgba(0,0,0,0.15);
+}
+
+.seller-quick-action {
+  transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.3s ease, border-color 0.2s;
+}
+.seller-quick-action:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 24px 60px rgba(0,0,0,0.08);
+  border-color: var(--border-secondary);
+}
+[data-theme="dark"] .seller-quick-action:hover {
+  box-shadow: 0 24px 60px rgba(0,0,0,0.3);
+}
+
+.seller-header-glass {
+  background: var(--surface-elevated);
+  backdrop-filter: blur(16px) saturate(1.2);
+  -webkit-backdrop-filter: blur(16px) saturate(1.2);
+  border-bottom: 1px solid var(--border-subtle);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease, background 0.3s ease;
+}
+.seller-header-scrolled {
+  box-shadow: 0 1px 18px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04);
+  border-bottom-color: var(--border-primary);
+}
+[data-theme="dark"] .seller-header-scrolled {
+  box-shadow: 0 1px 18px rgba(0,0,0,0.25), 0 1px 4px rgba(0,0,0,0.12);
+}
+
+.seller-gradient-divider {
+  height: 1px;
+  background: linear-gradient(to right, transparent, var(--border-primary), transparent);
+}
+
+/* Mobile responsiveness overrides for seller dashboard */
+@media (max-width: 640px) {
+  .seller-mobile-full {
+    width: 100% !important;
+  }
+}
+
+/* ═══════════════════════════════════════════
    SAAS REDESIGN — THEMED BRANDED COMPONENTS  
    ═══════════════════════════════════════════ */
 .themed-brand-gradient {
@@ -1616,3 +1687,7 @@ textarea:focus-visible {
 .store-nav.open > *:nth-child(10) { animation-delay: 240ms; }
 .store-nav.open > *:nth-child(11) { animation-delay: 270ms; }
 .store-nav.open > *:nth-child(12) { animation-delay: 300ms; }
+
+/* ═══════════════════════════════════════════
+   SELLERS PAGE — (REMOVED) Now uses Tailwind
+   ═══════════════════════════════════════════ */
