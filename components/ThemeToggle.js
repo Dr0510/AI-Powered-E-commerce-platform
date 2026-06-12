@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useSyncExternalStore, useState, useEffect } from "react";
 
 /* ─── Shared theme hook ─── */
 const themeListeners = new Set();
@@ -41,11 +41,11 @@ export function useTheme() {
 /* ─── Theme toggle button ─── */
 export default function ThemeToggle({ className = "" }) {
   const { theme, toggle } = useTheme();
-  const mounted = useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  );
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   if (!mounted) return <div className={`theme-toggle ${className}`} aria-hidden="true" />;
 

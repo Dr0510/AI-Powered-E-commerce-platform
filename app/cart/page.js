@@ -80,7 +80,7 @@ export default function CartPage() {
             <div className="flex justify-between"><span>Delivery</span><strong>Calculated at checkout</strong></div>
             <div className="border-t border-[var(--border-primary)] pt-3 text-lg font-black flex justify-between"><span>Total</span><span>{moneyFromPaise(totalInPaise)}</span></div>
           </div>
-          <Link className="mt-5 block rounded bg-[#123f3a] px-4 py-3 text-center font-black text-white" href="/">
+          <Link className="mt-5 block rounded bg-[#123f3a] px-4 py-3 text-center font-black text-white" href="/checkout">
             Continue to checkout
           </Link>
           <Link className="mt-3 block rounded border border-[var(--border-primary)] px-4 py-3 text-center font-black text-[var(--text-primary)] hover:bg-[var(--surface-secondary)]" href="/">

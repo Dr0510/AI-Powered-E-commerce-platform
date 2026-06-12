@@ -23,9 +23,18 @@ export async function GET(request) {
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20", 10)));
     const offset = (page - 1) * limit;
     const includeInactive = searchParams.get("includeInactive") === "true";
+    const sellerId = searchParams.get("sellerId");
 
     const sql = db();
+    let fromClause = sql`FROM products p`;
     let where = sql`WHERE 1=1`;
+
+    // If filtering by seller, JOIN seller_products to scope to that seller only
+    if (sellerId) {
+      fromClause = sql`FROM products p JOIN seller_products sp ON p.id = sp.product_id`;
+      where = sql`${where} AND sp.seller_id = ${sellerId}`;
+    }
+
     if (!includeInactive) {
       where = sql`${where} AND p.active = true`;
     }
@@ -36,10 +45,10 @@ export async function GET(request) {
       where = sql`${where} AND (p.title ILIKE ${"%" + search + "%"} OR p.description ILIKE ${"%" + search + "%"})`;
     }
 
-    const [{ count }] = await sql`SELECT COUNT(*) as count FROM products p ${where}`;
+    const [{ count }] = await sql`SELECT COUNT(*) as count ${fromClause} ${where}`;
 
     const rows = await sql`
-      SELECT p.* FROM products p ${where}
+      SELECT p.* ${fromClause} ${where}
       ORDER BY p.created_at DESC
       LIMIT ${limit}
       OFFSET ${offset}

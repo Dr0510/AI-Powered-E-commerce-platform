@@ -185,9 +185,36 @@ CREATE TABLE IF NOT EXISTS sellers (
   total_earnings decimal(15,2) DEFAULT 0,
   followers_count integer DEFAULT 0,
   announcement_banner text,
+  full_name text,
+  profile_photo_url text,
+  business_type text,
+  business_description text,
+  country text,
+  aadhaar_number text,
+  pan_number text,
+  gst_number text,
+  id_upload_url text,
+  bank_details jsonb NOT NULL DEFAULT '{}'::jsonb,
+  shipping_options text,
+  return_policy text,
+  store_policies text,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
+
+ALTER TABLE sellers ADD COLUMN IF NOT EXISTS full_name text;
+ALTER TABLE sellers ADD COLUMN IF NOT EXISTS profile_photo_url text;
+ALTER TABLE sellers ADD COLUMN IF NOT EXISTS business_type text;
+ALTER TABLE sellers ADD COLUMN IF NOT EXISTS business_description text;
+ALTER TABLE sellers ADD COLUMN IF NOT EXISTS country text;
+ALTER TABLE sellers ADD COLUMN IF NOT EXISTS aadhaar_number text;
+ALTER TABLE sellers ADD COLUMN IF NOT EXISTS pan_number text;
+ALTER TABLE sellers ADD COLUMN IF NOT EXISTS gst_number text;
+ALTER TABLE sellers ADD COLUMN IF NOT EXISTS id_upload_url text;
+ALTER TABLE sellers ADD COLUMN IF NOT EXISTS bank_details jsonb NOT NULL DEFAULT '{}'::jsonb;
+ALTER TABLE sellers ADD COLUMN IF NOT EXISTS shipping_options text;
+ALTER TABLE sellers ADD COLUMN IF NOT EXISTS return_policy text;
+ALTER TABLE sellers ADD COLUMN IF NOT EXISTS store_policies text;
 
 CREATE TABLE IF NOT EXISTS seller_products (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -256,7 +283,53 @@ CREATE TABLE IF NOT EXISTS seller_followers (
 -- Indexes
 CREATE INDEX IF NOT EXISTS sellers_verification_idx ON sellers (verification_status);
 CREATE INDEX IF NOT EXISTS sellers_slug_idx ON sellers (shop_slug);
-CREATE INDEX IF NOT EXISTS seller_products_seller_idx ON seller_products (seller_id);
-CREATE INDEX IF NOT EXISTS seller_reviews_seller_idx ON seller_reviews (seller_id);
+CREATE INDEX IF NOT EXISTS sellers_user_idx ON sellers (user_id);
+CREATE INDEX IF NOT EXISTS seller_products_seller_created_idx ON seller_products (seller_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS seller_products_product_seller_idx ON seller_products (product_id, seller_id);
+CREATE INDEX IF NOT EXISTS seller_products_active_seller_idx ON seller_products (seller_id) WHERE stock > 0;
+CREATE INDEX IF NOT EXISTS seller_reviews_seller_created_idx ON seller_reviews (seller_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS seller_followers_seller_follower_idx ON seller_followers (seller_id, follower_id);
+CREATE INDEX IF NOT EXISTS seller_followers_follower_seller_idx ON seller_followers (follower_id, seller_id);
 CREATE INDEX IF NOT EXISTS seller_coupons_seller_idx ON seller_coupons (seller_id);
 CREATE INDEX IF NOT EXISTS seller_payouts_seller_idx ON seller_payouts (seller_id);
+CREATE INDEX IF NOT EXISTS order_items_product_idx ON order_items (product_id);
+CREATE INDEX IF NOT EXISTS orders_created_idx ON orders (created_at DESC);
+
+-- Performance indexes for seller system
+CREATE INDEX IF NOT EXISTS orders_status_paid_idx ON orders (status) WHERE status IN ('paid', 'completed', 'delivered');
+CREATE INDEX IF NOT EXISTS sellers_slug_verified_idx ON sellers (shop_slug) WHERE verification_status = 'verified';
+CREATE INDEX IF NOT EXISTS order_items_order_product_idx ON order_items (order_id, product_id);
+CREATE INDEX IF NOT EXISTS seller_products_seller_stock_idx ON seller_products (seller_id, stock) WHERE stock > 0;
+
+-- Checkout System Tables
+CREATE TABLE IF NOT EXISTS coupons (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  code text NOT NULL UNIQUE,
+  description text,
+  discount_type text NOT NULL CHECK (discount_type IN ('percent', 'fixed', 'free_shipping')),
+  discount_value decimal(10,2) NOT NULL DEFAULT 0,
+  min_order_in_paise integer NOT NULL DEFAULT 0,
+  max_uses integer,
+  used_count integer NOT NULL DEFAULT 0,
+  max_uses_per_user integer DEFAULT 1,
+  expires_at timestamptz,
+  active boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS coupons_code_active_idx ON coupons (code, active) WHERE active = true;
+CREATE INDEX IF NOT EXISTS coupons_code_idx ON coupons (code);
+
+ALTER TABLE addresses ADD COLUMN IF NOT EXISTS state text;
+ALTER TABLE addresses ADD COLUMN IF NOT EXISTS address_type text DEFAULT 'home';
+ALTER TABLE addresses ADD COLUMN IF NOT EXISTS is_default boolean NOT NULL DEFAULT false;
+ALTER TABLE addresses ADD COLUMN IF NOT EXISTS updated_at timestamptz NOT NULL DEFAULT now();
+
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS discount_in_paise integer NOT NULL DEFAULT 0;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS coupon_code text;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping_charge_in_paise integer NOT NULL DEFAULT 0;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS tax_in_paise integer NOT NULL DEFAULT 0;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_method text DEFAULT 'razorpay';
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS notes text;
+ALTER TABLE orders ADD COLUMN IF NOT EXISTS shipping_state text;

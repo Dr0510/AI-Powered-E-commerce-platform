@@ -43,21 +43,39 @@ export async function POST(request) {
 
   try {
     const sql = db();
-    const [seller] = await sql`SELECT id FROM sellers WHERE user_id = ${user._id}`;
-    if (!seller) return Response.json({ message: "Not a seller" }, { status: 404 });
+    const body = await request.json();
+    const { sellerId, customerId, message } = body;
 
-    const { customerId, message } = await request.json();
-    if (!customerId || !message) {
-      return Response.json({ message: "Customer ID and message required" }, { status: 400 });
+    if (!message) {
+      return Response.json({ message: "Message required" }, { status: 400 });
     }
 
-    const [chat] = await sql`
-      INSERT INTO seller_chat (seller_id, customer_id, message, sender_type)
-      VALUES (${seller.id}, ${customerId}, ${message}, 'seller')
-      RETURNING *
-    `;
+    // Check if the user is a seller
+    const [seller] = await sql`SELECT id FROM sellers WHERE user_id = ${user._id}`;
 
-    return Response.json({ chat }, { status: 201 });
+    if (seller && customerId) {
+      // Seller sending message to customer
+      const [chat] = await sql`
+        INSERT INTO seller_chat (seller_id, customer_id, message, sender_type)
+        VALUES (${seller.id}, ${customerId}, ${message}, 'seller')
+        RETURNING *
+      `;
+      return Response.json({ chat }, { status: 201 });
+    } else if (sellerId) {
+      // Customer sending message to seller (or seller messaging another seller's customer)
+      const [sellerRecord] = await sql`SELECT id FROM sellers WHERE id = ${sellerId}`;
+      if (!sellerRecord) return Response.json({ message: "Seller not found" }, { status: 404 });
+
+      // Use the current user as the customer
+      const [chat] = await sql`
+        INSERT INTO seller_chat (seller_id, customer_id, message, sender_type)
+        VALUES (${sellerId}, ${user._id}, ${message}, 'customer')
+        RETURNING *
+      `;
+      return Response.json({ chat }, { status: 201 });
+    } else {
+      return Response.json({ message: "Either sellerId or customerId required" }, { status: 400 });
+    }
   } catch (error) {
     return Response.json({ message: error.message }, { status: 500 });
   }

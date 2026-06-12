@@ -1,5 +1,5 @@
 import { v2 as cloudinary } from "cloudinary";
-import { requireAdmin } from "@/lib/auth";
+import { requireUser } from "@/lib/auth";
 import { withRateLimit } from "@/lib/rateLimit";
 
 cloudinary.config({
@@ -10,7 +10,7 @@ cloudinary.config({
 
 async function postHandler(request) {
   try {
-    const { response } = await requireAdmin();
+    const { user, response } = await requireUser();
     if (response) {
       return response;
     }

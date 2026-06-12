@@ -9,12 +9,13 @@ export async function GET(request) {
   try {
     const response = await fetch(`https://api.postalpincode.in/pincode/${pincode}`);
     const data = await response.json();
+    const result = Array.isArray(data) ? data[0] : data;
 
-    if (data.Status === "Error" || !data.PostOffice || data.PostOffice.length === 0) {
+    if (result.Status === "Error" || !result.PostOffice || result.PostOffice.length === 0) {
       return Response.json({ message: "Pincode not found", status: "error" }, { status: 404 });
     }
 
-    const postOffice = data.PostOffice[0];
+    const postOffice = result.PostOffice[0];
     return Response.json({
       status: "success",
       data: {
