@@ -1,8 +1,9 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, useRef } from "react";
 import Link from "next/link";
+import { motion, AnimatePresence } from "framer-motion";
 import { api } from "@/lib/api";
 import { discountFor, money, moneyFromPaise, priceInPaise, ratingFor } from "@/lib/format";
 import { StoreHeader, StatusPill, deliveryEstimate } from "@/components/StoreShell";
@@ -398,38 +399,77 @@ export default function Home() {
     }
   }
 
+  const fadeUp = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i = 0) => ({
+      opacity: 1,
+      y: 0,
+      transition: { delay: i * 0.08, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] },
+    }),
+  };
+
   return (
     <main className="luxury-shell min-h-screen text-[var(--text-primary)]">
       <StoreHeader cartCount={cartCount} user={user} />
 
       <section className="mx-auto max-w-[1600px] px-6 py-6">
-        <div className="brand-gradient animate-rise overflow-hidden rounded p-6 text-white shadow-xl md:p-10">
+        <motion.div
+          className="brand-gradient overflow-hidden rounded p-6 text-white shadow-xl md:p-10"
+          initial={{ opacity: 0, y: 24, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.6, ease: [0.34, 1.56, 0.64, 1] }}
+        >
           <div className="grid gap-8 lg:grid-cols-[1fr_360px] lg:items-end">
-            <div>
-              <StatusPill tone="gold">Independent premium marketplace</StatusPill>
-              <h1 className="mt-5 max-w-3xl text-4xl font-black tracking-normal md:text-6xl">Curated everyday luxury, delivered with quiet confidence.</h1>
-              <p className="mt-4 max-w-2xl text-base leading-7 text-[#f6efe4]">DR MART by DR Group brings refined products, verified sellers, intelligent discovery, secure Razorpay checkout, and transparent order tracking into one calm shopping experience.</p>
-              <form className="mt-6 grid gap-2 rounded bg-white/12 p-2 md:grid-cols-[150px_1fr_auto]" onSubmit={search}>
+            <motion.div
+              initial="hidden"
+              animate="visible"
+              variants={{ visible: { transition: { staggerChildren: 0.1 } } }}
+            >
+              <motion.div variants={fadeUp} custom={0}><StatusPill tone="gold">Independent premium marketplace</StatusPill></motion.div>
+              <motion.h1 variants={fadeUp} custom={1} className="mt-5 max-w-3xl text-4xl font-black tracking-normal md:text-6xl">Curated everyday luxury, delivered with quiet confidence.</motion.h1>
+              <motion.p variants={fadeUp} custom={2} className="mt-4 max-w-2xl text-base leading-7 text-[#f6efe4]">DR MART by DR Group brings refined products, verified sellers, intelligent discovery, secure Razorpay checkout, and transparent order tracking into one calm shopping experience.</motion.p>
+              <motion.form variants={fadeUp} custom={3} className="mt-6 grid gap-2 rounded bg-white/12 p-2 md:grid-cols-[150px_1fr_auto]" onSubmit={search}>
                 <select className="rounded border border-[var(--border-secondary)] bg-[var(--input-bg)] px-3 py-3 text-sm font-bold text-[var(--text-primary)]" onChange={(event) => setCategory(event.target.value)} value={category}>
                   <option value="">All categories</option>
                   {categories.map((item) => <option key={item} value={item}>{item}</option>)}
                 </select>
                 <input className="rounded border border-[var(--border-secondary)] bg-[var(--input-bg)] px-4 py-3 text-sm text-[var(--text-primary)] outline-none" onChange={(event) => setQuery(event.target.value)} placeholder="Search handcrafted bags, phones, appliances..." value={query} />
                 <button className="btn-gold px-5 py-3 text-sm disabled:opacity-60" disabled={busy} onClick={ripple} type="submit">Search</button>
-              </form>
-            </div>
-            <div className="rounded border border-white/20 bg-white/12 p-5">
-              <p className="text-sm font-bold text-[#f4d7a1]">Today’s collection</p>
-              <p className="mt-2 text-3xl font-black">{visibleProducts.length} pieces</p>
+              </motion.form>
+            </motion.div>
+            <motion.div
+              className="rounded border border-white/20 bg-white/12 p-5"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.5, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+            >
+              <p className="text-sm font-bold text-[#f4d7a1]">Today&rsquo;s collection</p>
+              <motion.p
+                className="mt-2 text-3xl font-black"
+                key={visibleProducts.length}
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: "spring", stiffness: 400, damping: 20 }}
+              >{visibleProducts.length} pieces</motion.p>
               <p className="mt-2 text-sm text-[#f6efe4]">Sorted by quality signals, stock confidence, seller reliability, and savings.</p>
               <button className="btn-ghost mt-5 px-4 py-2 text-sm" onClick={(e) => { ripple(e); seedProducts(); }} type="button">Load demo catalog</button>
-            </div>
+            </motion.div>
           </div>
-        </div>
+        </motion.div>
 
-        <div className="mt-6 grid gap-5 lg:grid-cols-[260px_1fr_330px]">
+        <motion.div
+          className="mt-6 grid gap-5 lg:grid-cols-[260px_1fr_330px]"
+          initial={{ opacity: 0, y: 16 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.25, duration: 0.5, ease: [0.34, 1.56, 0.64, 1] }}
+        >
           <aside className="space-y-4">
-            <section className="glass-panel rounded p-4">
+            <motion.section
+              className="glass-panel rounded p-4"
+              initial={{ opacity: 0, x: -16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.3, duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
+            >
               <h2 className="font-black">Explore</h2>
               <div className="mt-3 grid gap-2">
                 <button className={`btn-category px-3 py-2 text-left text-sm font-bold ${!category ? "bg-[var(--brand-green)] text-white active" : "hover:bg-[var(--surface-secondary)]"}`} onClick={(e) => { ripple(e); chooseCategory(""); }} type="button">All products</button>
@@ -437,9 +477,14 @@ export default function Home() {
                   <button className={`btn-category px-3 py-2 text-left text-sm ${category === item ? "bg-[var(--brand-green)] font-bold text-white active" : "hover:bg-[var(--surface-secondary)]"}`} key={item} onClick={(e) => { ripple(e); chooseCategory(item); }} type="button">{item}</button>
                 ))}
               </div>
-            </section>
+            </motion.section>
 
-            <section className="glass-panel rounded p-4">
+            <motion.section
+              className="glass-panel rounded p-4"
+              initial={{ opacity: 0, x: -16 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.35, duration: 0.4, ease: [0.34, 1.56, 0.64, 1] }}
+            >
               <h2 className="font-black">Filters</h2>
               <div className="mt-3 space-y-3">
                 <label className="block text-sm font-bold">Price</label>
@@ -462,18 +507,28 @@ export default function Home() {
                   <option value="stock">Stock confidence</option>
                 </select>
               </div>
-            </section>
+            </motion.section>
           </aside>
 
           <div className="space-y-5">
-            <section className="grid gap-3 md:grid-cols-3">
+            <motion.section
+              className="grid gap-3 md:grid-cols-3"
+              initial="hidden"
+              animate="visible"
+              variants={{ visible: { transition: { staggerChildren: 0.08, delayChildren: 0.4 } } }}
+            >
               {["Verified sellers", "Razorpay protected", "Easy order tracking"].map((text) => (
-                <div className="glass-panel rounded p-4" key={text}>
+                <motion.div
+                  className="glass-panel rounded p-4"
+                  key={text}
+                  variants={fadeUp}
+                  whileHover={{ y: -3, transition: { duration: 0.2 } }}
+                >
                   <p className="text-xs font-bold uppercase text-[#7c6a55]">DR MART standard</p>
                   <p className="mt-1 text-lg font-black">{text}</p>
-                </div>
+                </motion.div>
               ))}
-            </section>
+            </motion.section>
 
             <section className="glass-panel rounded p-4">
               <div className="flex flex-wrap items-end justify-between gap-3 border-b border-[var(--border-primary)] pb-4">
@@ -657,7 +712,7 @@ export default function Home() {
               <Link className="mt-3 block rounded border border-[var(--brand-green)] px-4 py-2 text-center text-sm font-black text-[var(--brand-green)] hover:bg-[var(--brand-green)] hover:text-white" href="/profile">Open profile</Link>
             </section>
           </aside>
-        </div>
+        </motion.div>
       </section>
       <ToastContainer toasts={toasts} onDismiss={dismissToast} />
     </main>

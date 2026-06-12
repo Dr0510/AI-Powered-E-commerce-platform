@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import AuthControls from "@/components/AuthControls";
 import ThemeToggle from "@/components/ThemeToggle";
 
@@ -23,11 +24,41 @@ export function BrandMark() {
 
 export function StoreHeader({ cartCount = 0, user = null }) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+  const [cartBounce, setCartBounce] = useState(false);
+  const prevCount = useRef(cartCount);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8);
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (cartCount !== prevCount.current) {
+      setCartBounce(true);
+      const timer = setTimeout(() => setCartBounce(false), 400);
+      prevCount.current = cartCount;
+      return () => clearTimeout(timer);
+    }
+  }, [cartCount]);
+
+  function isActive(href) {
+    if (href === "/") return pathname === "/";
+    return pathname.startsWith(href);
+  }
+
+  function navLinkClass(href, extra = "") {
+    const base = `store-nav-link ${extra}`;
+    return isActive(href) ? `${base} active-link` : base;
+  }
 
   return (
     <>
       <a className="skip-nav" href="#main-content">Skip to content</a>
-      <header className="store-header" role="banner">
+      <header className={`store-header${scrolled ? " scrolled" : ""}`} role="banner">
         <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-3 px-4 py-3">
           <BrandMark />
 
@@ -58,15 +89,15 @@ export function StoreHeader({ cartCount = 0, user = null }) {
               ✕
             </button>
 
-            <Link className="store-nav-link" href="/" onClick={() => setMobileOpen(false)}>Shop</Link>
-            <Link className="store-nav-link" href="/sellers" onClick={() => setMobileOpen(false)}>🏪 Sellers</Link>
-            <Link className="store-nav-link" href="/leaderboard" onClick={() => setMobileOpen(false)}>🏆 Top Sellers</Link>
-            <Link className="ai-nav-link rounded px-3 py-2" href="/ai" onClick={() => setMobileOpen(false)}>✨ AI Hub</Link>
-            <Link className="store-nav-link" href="/wishlist" onClick={() => setMobileOpen(false)}>Wishlist</Link>
-            <Link className="store-nav-link" href="/orders" onClick={() => setMobileOpen(false)}>Orders</Link>
-            <Link className="store-nav-link" href="/profile" onClick={() => setMobileOpen(false)}>Profile</Link>
-            <Link className="store-nav-link" href="/seller/dashboard" onClick={() => setMobileOpen(false)}>📊 Seller</Link>
-            <Link className="store-cart-btn" href="/cart" onClick={() => setMobileOpen(false)}>
+            <Link className={navLinkClass("/")} href="/" onClick={() => setMobileOpen(false)}>Shop</Link>
+            <Link className={navLinkClass("/sellers")} href="/sellers" onClick={() => setMobileOpen(false)}>🏪 Sellers</Link>
+            <Link className={navLinkClass("/leaderboard")} href="/leaderboard" onClick={() => setMobileOpen(false)}>🏆 Top Sellers</Link>
+            <Link className={`ai-nav-link rounded px-3 py-2${isActive("/ai") ? " active-link" : ""}`} href="/ai" onClick={() => setMobileOpen(false)}>✨ AI Hub</Link>
+            <Link className={navLinkClass("/wishlist")} href="/wishlist" onClick={() => setMobileOpen(false)}>Wishlist</Link>
+            <Link className={navLinkClass("/orders")} href="/orders" onClick={() => setMobileOpen(false)}>Orders</Link>
+            <Link className={navLinkClass("/profile")} href="/profile" onClick={() => setMobileOpen(false)}>Profile</Link>
+            <Link className={navLinkClass("/seller")} href="/seller/dashboard" onClick={() => setMobileOpen(false)}>📊 Seller</Link>
+            <Link className={`store-cart-btn${cartBounce ? " cart-bounce" : ""}`} href="/cart" onClick={() => setMobileOpen(false)}>
               Cart {cartCount ? `(${cartCount})` : ""}
             </Link>
             <span className="hidden text-xs md:inline" style={{ color: "var(--text-muted)" }}>{user?.name || "Guest"}</span>
