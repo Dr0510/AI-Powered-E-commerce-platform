@@ -22,7 +22,7 @@ export function BrandMark() {
   );
 }
 
-export function StoreHeader({ cartCount = 0, user = null }) {
+export function StoreHeader({ cartCount = 0, user = null, onCartClick }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [cartBounce, setCartBounce] = useState(false);
@@ -97,9 +97,9 @@ export function StoreHeader({ cartCount = 0, user = null }) {
             <Link className={navLinkClass("/orders")} href="/orders" onClick={() => setMobileOpen(false)}>Orders</Link>
             <Link className={navLinkClass("/profile")} href="/profile" onClick={() => setMobileOpen(false)}>Profile</Link>
             <Link className={navLinkClass("/seller")} href="/seller/dashboard" onClick={() => setMobileOpen(false)}>📊 Seller</Link>
-            <Link className={`store-cart-btn${cartBounce ? " cart-bounce" : ""}`} href="/cart" onClick={() => setMobileOpen(false)}>
-              Cart {cartCount ? `(${cartCount})` : ""}
-            </Link>
+            <button className={`store-cart-btn${cartBounce ? " cart-bounce" : ""}`} onClick={onCartClick} type="button">
+              🛒 Cart {cartCount ? `(${cartCount})` : ""}
+            </button>
             <span className="hidden text-xs md:inline" style={{ color: "var(--text-muted)" }}>{user?.name || "Guest"}</span>
             <AuthControls compact />
           </nav>
